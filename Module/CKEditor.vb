@@ -14,13 +14,35 @@ Module CKEditor
         <head>
         <meta charset='UTF-8'>
         <title>CKEditor Integration</title>
-        <script src='https://cdn.ckeditor.com/4.22.1/full/ckeditor.js'></script>
+        <script src='https://cdn.ckeditor.com/4.22.1/full-all/ckeditor.js'></script>
+
+        <!-- Highlight.js Stylesheet -->
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css'>
+
+        <!-- Highlight.js Hauptskript -->
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js'></script>
+
+        <!-- Zusätzliche Sprachmodule für Highlight.js -->
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js'></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbnet.min.js'></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/sql.min.js'></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js'></script>
+
+        <!-- Hinweis: Für VBA gibt es kein separates Modul, wir verwenden 'vbnet' als Ersatz -->
+
         <style>
         .cke_updatewarn {{ display: none !important; }}
         html, body {{
             height: 100%;
             margin: 0;
             padding: 0;
+        }}
+        pre code {{
+            display: block;
+            padding: 0.5em;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }}
         </style>
         </head>
@@ -30,7 +52,15 @@ Module CKEditor
         CKEDITOR.replace('editor', {{
             height: 800,
             versionCheck: false,
-            extraPlugins: 'maximize',
+            extraPlugins: 'maximize,codesnippet',
+            codeSnippet_theme: 'default',
+            codeSnippet_languages: {{
+                vbnet: 'VB.NET',
+                vbscript: 'VBS',
+                sql: 'SQL',
+                python: 'Python',
+                vba: 'VBA'  // Wir verwenden 'vbnet' für VBA-Syntax
+            }},
             on: {{
                 instanceReady: function(evt) {{
                     this.execCommand('maximize');
@@ -47,6 +77,10 @@ Module CKEditor
                         return tempDiv.textContent || tempDiv.innerText;
                     }};
 
+                    // Highlight.js konfigurieren und initialisieren
+                    hljs.configure({{languages: ['vbnet', 'vbscript', 'sql', 'python']}});
+                    hljs.highlightAll();
+
                     // Signal an WPF senden, dass der Editor bereit ist
                     window.chrome.webview.postMessage('editorReady');
                 }}
@@ -58,8 +92,8 @@ Module CKEditor
                 {{ name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] }},
                 {{ name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'] }},
                 {{ name: 'links', items: ['Link', 'Unlink'] }},
-                {{ name: 'insert', items: ['Image', 'Flash', 'Table', 'HorizontalRule', 'SpecialChar', 'PageBreak'] }},
-                '/',
+                {{ name: 'insert', items: ['Image', 'Flash', 'Table', 'HorizontalRule', 'SpecialChar', 'PageBreak', 'CodeSnippet'] }},
+                '/','/',
                 {{ name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] }},
                 {{ name: 'colors', items: ['TextColor', 'BGColor'] }},
                 {{ name: 'tools', items: ['Maximize', 'ShowBlocks'] }},
