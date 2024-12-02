@@ -1,0 +1,109 @@
+﻿<Page x:Class="LandingPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+      mc:Ignorable="d" 
+      d:DesignHeight="1000" d:DesignWidth="1800"
+      Title="Startseite" Foreground="White">
+    <Border Grid.Column="1" Background="#292e37" Margin="10" CornerRadius="10">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="250"/>
+                <RowDefinition Height="150"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <ui:Image CornerRadius="10" 
+                  BorderBrush="#33000000" 
+                  Stretch="UniformToFill" 
+                  HorizontalAlignment="Stretch"
+                  Source="/statics/banner.jpg" 
+                  Grid.Column="1" 
+                  Grid.Row="0" Margin="20"/>
+            <StackPanel Orientation="Vertical">
+                <ui:TextBlock Text="Knowledge Base" 
+                          FontTypography="TitleLarge" 
+                          Grid.Column="1" 
+                          Grid.Row="0" Margin="50,70,0,0"/>
+                <ui:TextBlock Text="Wissen heißt, wissen wo es geschrieben ist." 
+                          FontTypography="Subtitle" 
+                          Grid.Column="1" 
+                          Grid.Row="0" Margin="50,0,0,0"/>
+                <ui:TextBlock Text="Erstellt von Leon Stolz" HorizontalAlignment="Right"
+                          FontTypography="Caption" 
+                          Grid.Column="1" 
+                          Grid.Row="0" Margin="0,50,35,0"/>
+
+            </StackPanel>
+            <Grid Grid.Column="1" Grid.Row="1">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Spalte 0 -->
+                <Grid Grid.Column="0" Margin="20" Cursor="Hand">
+                    <ui:CardAction HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="/statics/Card_anleitung.png" 
+                       Width="50" 
+                       Height="50" 
+                       Stretch="Uniform" 
+                       Margin="0,0,10,0"/>
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                <ui:TextBlock Text="Basiswissen" FontTypography="BodyStrong"/>
+                                <ui:TextBlock Text="Anleitungen und Tutorials" FontTypography="Caption"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ui:CardAction>
+                </Grid>
+
+                <!-- Spalte 1 -->
+                <Grid Grid.Column="1" Margin="20" Cursor="Hand">
+                    <ui:CardAction HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="/statics/Card_robo.png" 
+                       Width="50" 
+                       Height="50" 
+                       Stretch="Uniform" 
+                       Margin="0,0,10,0"/>
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                <ui:TextBlock Text="EDEKA Intelligence" FontTypography="BodyStrong"/>
+                                <ui:TextBlock Text="Erfahre mehr..." FontTypography="Caption"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ui:CardAction>
+                </Grid>
+
+                <!-- Spalte 2 -->
+                <Grid Grid.Column="2" Margin="20" Cursor="Hand">
+                    <ui:CardAction HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="/statics/Card_anleitung.png" 
+                       Width="50" 
+                       Height="50" 
+                       Stretch="Uniform" 
+                       Margin="0,0,10,0"/>
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                <ui:TextBlock Text="Basiswissen" FontTypography="BodyStrong"/>
+                                <ui:TextBlock Text="Anleitungen und Tutorials" FontTypography="Caption"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ui:CardAction>
+                </Grid>
+            </Grid>
+
+            <Separator Grid.Row="2" Margin="5" Background="White" Foreground="White"/>
+
+            <StackPanel Grid.Row="3" Margin="20" Visibility="Hidden">
+                <wv2:WebView2/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Page>

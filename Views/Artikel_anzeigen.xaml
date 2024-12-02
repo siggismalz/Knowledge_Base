@@ -1,0 +1,176 @@
+﻿<Page x:Class="Artikel_anzeigen"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+      mc:Ignorable="d" 
+      d:DesignHeight="1000" d:DesignWidth="1800" Foreground="White"
+      Title="Artikel_rendering">
+    <Border Grid.Column="1" Background="#292e37" Margin="10" CornerRadius="10">
+        <Grid>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Breadcrumb Navigation -->
+                <Grid Grid.Row="0">
+                    <ui:BreadcrumbBar Margin="10" x:Name="Breadcrumb_Nav" ItemsSource="{Binding BreadcrumbItems}">
+                        <ui:BreadcrumbBar.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Hyperlink Click="BreadcrumbItem_Click">
+                                        <Run Text="{Binding DisplayName}" />
+                                    </Hyperlink>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ui:BreadcrumbBar.ItemTemplate>
+                    </ui:BreadcrumbBar>
+                </Grid>
+
+                <!-- Main Content -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="400"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Panel -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <!-- New row for Versions -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Autorinformationen -->
+                        <ui:Card Margin="10,25,10,10">
+                            <StackPanel Orientation="Vertical">
+                                <ui:TextBlock Text="Zuletzt bearbeitet von" FontTypography="Subtitle" HorizontalAlignment="Left"/>
+                                <Separator Margin="0,5,0,0"/>
+                                <ui:TextBlock Text="Autor:" FontTypography="Caption" Margin="0,5,0,0" x:Name="T_Autor"/>
+                                <ui:TextBlock Text="Erstellt am:" FontTypography="Caption" x:Name="T_Erstellt_am"/>
+                            </StackPanel>
+                        </ui:Card>
+
+                        <!-- Tags Box -->
+                        <ui:CardExpander Margin="10" Grid.Row="1">
+                            <ui:CardExpander.Header>
+                                <ui:TextBlock Text="Tags" FontTypography="Subtitle"/>
+                            </ui:CardExpander.Header>
+                            <ItemsControl x:Name="TagsList" Margin="10">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="2">
+                                            <ui:SymbolIcon Symbol="Tag24" Width="16" Height="16" Margin="0,0,5,0"/>
+                                            <ui:TextBlock Text="{Binding}" FontTypography="Body"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ui:CardExpander>
+
+                        <!-- Inhaltsverzeichnis -->
+                        <ui:CardExpander Margin="10" Grid.Row="2">
+                            <ui:CardExpander.Header>
+                                <ui:TextBlock Text="Inhaltsverzeichnis" FontTypography="Subtitle"/>
+                            </ui:CardExpander.Header>
+                            <TreeView x:Name="Inhaltsverzeichnis" Margin="10" SelectedItemChanged="Inhaltsverzeichnis_SelectedItemChanged">
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                        <ui:TextBlock Text="{Binding Titel}" FontTypography="Body"/>
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+                        </ui:CardExpander>
+
+                        <!-- Old Versions Box -->
+                        <ui:CardExpander Margin="10" Grid.Row="3">
+                            <ui:CardExpander.Header>
+                                <ui:TextBlock Text="Alte Versionen" FontTypography="Subtitle"/>
+                            </ui:CardExpander.Header>
+                            <ListBox x:Name="VersionsList" Margin="10" SelectionChanged="VersionsList_SelectionChanged" Background="#343941" Foreground="White">
+                                <ListBox.Resources>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.Resources>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="2">
+                                            <ui:SymbolIcon Symbol="History24" Width="16" Height="16" Margin="0,0,5,0"/>
+                                            <ui:TextBlock Text="{Binding Versioniert_am, StringFormat='dd.MM.yyyy HH:mm'}" FontTypography="Body"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                        </ui:CardExpander>
+
+                        <!-- PDF Download Button -->
+                        <ui:CardAction Margin="10" Grid.Row="4">
+                            <StackPanel Orientation="Vertical">
+                                <ui:Button x:Name="B_Artikel_als_PDF_speichern" Content="Als PDF downloaden" 
+                                           Icon="{ui:SymbolIcon ArrowDownload24}"
+                                           BorderBrush="Transparent" Background="Transparent"
+                                           Height="50" FontSize="24" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                        </ui:CardAction>
+                    </Grid>
+
+                    <!-- Right Panel (Browser and Title) -->
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Titel und Bearbeiten-Button -->
+                        <Grid Grid.Row="0" Margin="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Background="Transparent" HorizontalAlignment="Stretch" CornerRadius="5" Padding="5,0,0,5">
+                                <ui:TextBlock Text="{Binding Titel}" FontTypography="Title" Margin="0,10,10,10" x:Name="T_Artikeltitel"/>
+                            </Border>
+
+                            <!-- Bearbeiten-Button -->
+                            <ui:Button x:Name="B_Artikel_bearbeiten" Content="Bearbeiten" Icon="{ui:SymbolIcon Edit24}" 
+                                       Margin="10,10,0,10" HorizontalAlignment="Right" Click="B_Artikel_bearbeiten_Click"
+                                       Grid.Column="1" Cursor="Hand" VerticalAlignment="Top"/>
+                        </Grid>
+
+                        <!-- Browser -->
+                        <wv2:WebView2 x:Name="Browser" Source="about:blank" Grid.Row="1" Margin="10,5,10,10"/>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Page>

@@ -1,0 +1,110 @@
+﻿<Page x:Class="Tagübersicht"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      mc:Ignorable="d" 
+      d:DesignHeight="600" d:DesignWidth="900" Foreground="White"
+      Title="Tags">
+    <Border Grid.Column="1" Background="#292e37" Margin="10" CornerRadius="10">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <ui:TextBlock Text="Tag-Verwaltung" 
+                   FontSize="32" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,20" Foreground="White"/>
+
+            <!-- Suchleiste mit AutoSuggestBox -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,20">
+                <TextBlock Text="Suche nach Tag:" 
+                       VerticalAlignment="Center" 
+                       FontSize="16" 
+                       Foreground="White" 
+                       Margin="0,0,10,0"/>
+                <ui:AutoSuggestBox x:Name="TagSearchBox" 
+                           Width="300" 
+                           PlaceholderText="Geben Sie einen Tag-Namen ein..."
+                           QuerySubmitted="TagSearchBox_QuerySubmitted"
+                           TextChanged="TagSearchBox_TextChanged"/>
+            </StackPanel>
+
+            <!-- Cards für die Tags -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding TagsView}">
+                    <!-- Anordnung der Karten in einem WrapPanel -->
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="10">
+                                <ui:CardAction Width="250" Margin="5" Cursor="Hand" Icon="Label"
+                                               Click="Card_Click">
+                                    <ui:CardAction.ContextMenu>
+                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" Foreground="White">
+                                            <MenuItem Header="Umbenennen" Click="RenameButton_Click"/>
+                                            <MenuItem Header="Löschen" Click="DeleteButton_Click"/>
+                                        </ContextMenu>
+                                    </ui:CardAction.ContextMenu>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                        <ui:TextBlock Text="{Binding TagName}" 
+                                                      FontTypography="BodyStrong" 
+                                                      Foreground="White"/>
+                                    </StackPanel>
+                                </ui:CardAction>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Overlay für den Umbenennungsdialog -->
+            <Grid x:Name="DialogOverlay" Background="#80000000" Visibility="Collapsed">
+                <Border Width="400" Height="250" Background="White" CornerRadius="10" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20" >
+                    <StackPanel>
+                        <ui:TextBlock Text="Tag umbenennen" 
+                               FontSize="24" 
+                               FontWeight="Bold" 
+                               Foreground="#333333" 
+                               Margin="0,0,0,20"/>
+                        <ui:TextBox x:Name="NewTagNameTextBox" 
+                             PlaceholderText="Neuer Tag-Name" 
+                             FontSize="16" 
+                             Margin="0,0,0,20" 
+                             Background="#F9F9F9" 
+                             BorderBrush="#CCCCCC"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ui:Button Content="Abbrechen" 
+                                Click="CancelRename_Click" 
+                                Width="100" 
+                                Margin="5,0"
+                                Appearance="Secondary"/>
+                            <ui:Button Content="Speichern" 
+                                Click="SaveRename_Click" 
+                                Width="100" 
+                                Margin="5,0"
+                                Appearance="Primary"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Snackbar für Benachrichtigungen -->
+            <ui:SnackbarPresenter x:Name="AppSnackbar" 
+                     HorizontalAlignment="Center" 
+                     VerticalAlignment="Bottom" 
+                     Margin="0,0,0,20"
+                     />
+        </Grid>
+    </Border>
+</Page>

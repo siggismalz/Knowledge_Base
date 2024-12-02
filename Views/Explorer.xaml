@@ -1,0 +1,83 @@
+﻿<Page x:Class="Explorer"
+       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="Explorer">
+    <Border Grid.Column="1" Background="#292e37" Margin="10" CornerRadius="10">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <ui:BreadcrumbBar Margin="10" Grid.Row="0" ItemsSource="{Binding BreadcrumbItems}">
+                <ui:BreadcrumbBar.ItemTemplate>
+                    <DataTemplate>
+                        <ui:TextBlock AllowDrop="True"
+                                      Drop="BreadcrumbItem_Drop"
+                                      DragOver="BreadcrumbItem_DragOver">
+                            <Hyperlink Click="BreadcrumbItem_Click">
+                                <Run Text="{Binding DisplayName}" />
+                            </Hyperlink>
+                        </ui:TextBlock>
+                    </DataTemplate>
+                </ui:BreadcrumbBar.ItemTemplate>
+            </ui:BreadcrumbBar>
+
+            <ui:AutoSuggestBox x:Name="T_Suchfeld" Margin="20,10,20,0" Grid.Row="1" 
+                   PlaceholderText="Suche nach Artikeln, Ordnern oder Herausgebern..."
+                   QuerySubmitted="T_Suchfeld_QuerySubmitted" />
+
+            <!-- Anpassung hier: Grid in ScrollViewer einbetten -->
+            <ScrollViewer Grid.Row="3" Margin="20" Background="Transparent" 
+                          VerticalScrollBarVisibility="Auto" 
+                          PreviewMouseRightButtonUp="Grid_PreviewMouseRightButtonUp">
+                <!-- Hier sollen dynamisch Cards generiert werden -->
+                <ItemsControl x:Name="Dynamic_cards">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:CardAction HorizontalAlignment="Stretch" Margin="0,0,10,10"
+                               Cursor="Hand" x:Name="B_Card" Click="B_Card_Click"
+                               PreviewMouseLeftButtonDown="B_Card_PreviewMouseLeftButtonDown"
+                               PreviewMouseMove="B_Card_PreviewMouseMove"
+                               AllowDrop="{Binding IstVerzeichnis}"
+                               Drop="Card_Drop"
+                               DragOver="Card_DragOver">
+                                <ui:CardAction.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" Foreground="White">
+                                        <MenuItem Header="Umbenennen" Click="RenameMenuItem_Click"/>
+                                        <MenuItem Header="Löschen" Click="DeleteMenuItem_Click"/>
+                                    </ContextMenu>
+                                </ui:CardAction.ContextMenu>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <Image Source="{Binding Symbol}"
+                                           Width="50"
+                                           Height="50"
+                                           Stretch="Uniform"
+                                           Margin="0,0,10,5"/>
+                                    <ui:TextBlock Text="{Binding Titel}" FontTypography="BodyStrong"/>
+                                    <ui:TextBlock Text="{Binding Author}" FontTypography="Caption" />
+                                </StackPanel>
+                            </ui:CardAction>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <!-- Ende der Anpassung -->
+
+            <ui:SnackbarPresenter x:Name="SnackbarPresenter" VerticalAlignment="Bottom"/>
+        </Grid>
+    </Border>
+</Page>
