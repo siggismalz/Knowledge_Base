@@ -4,6 +4,7 @@ Imports System.Data.SQLite
 Imports System.Windows.Input
 Imports System.Windows.Media.Animation
 Imports Wpf.Ui.Controls
+Imports System.Windows
 Imports System.IO
 
 Public Class Tagübersicht
@@ -14,11 +15,17 @@ Public Class Tagübersicht
     Private AllTags As New List(Of Tag)() ' Für die AutoSuggestBox
     Private TagsViewInternal As ICollectionView
 
+    ' ObservableCollection für die Artikel
+    Private ArticlesList As New ObservableCollection(Of Artikel)()
+
     Private dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
     Private connectionString As String = $"Data Source={dbFilePath};Version=3;"
 
     ' Variable zur Speicherung des ausgewählten Tags beim Umbenennen
     Private selectedTagForRename As Tag = Nothing
+
+    ' Variable zur Speicherung des aktuell ausgewählten Tags
+    Private selectedTag As Tag = Nothing
 
     Public Sub New()
         InitializeComponent()
@@ -40,6 +47,13 @@ Public Class Tagübersicht
         End Get
     End Property
 
+    ' Öffentliche Eigenschaft für die Artikel
+    Public ReadOnly Property Articles As ObservableCollection(Of Artikel)
+        Get
+            Return ArticlesList
+        End Get
+    End Property
+
     ' Methode zum Laden der Tags aus der Datenbank
     Private Sub LoadTags()
         TagsList.Clear()
@@ -54,9 +68,9 @@ Public Class Tagübersicht
 
                         While reader.Read()
                             Dim tag As New Tag With {
-                                    .TagId = reader.GetInt32(0),
-                                    .TagName = reader.GetString(1)
-                                }
+                                .TagId = reader.GetInt32(0),
+                                .TagName = reader.GetString(1)
+                            }
                             TagsList.Add(tag)
                             AllTags.Add(tag)
                         End While
@@ -67,16 +81,53 @@ Public Class Tagübersicht
                 Catch ex As Exception
                     ' Verwendung von Snackbar statt MessageBox
                     Dim fehlermeldung As New Snackbar(AppSnackbar) With {
-                            .Title = "Fehler",
-                            .Appearance = ControlAppearance.Danger,
-                            .Content = $"Fehler beim Laden der Tags: {ex.Message}",
-                            .Timeout = TimeSpan.FromSeconds(3)
-                        }
+                        .Title = "Fehler",
+                        .Appearance = ControlAppearance.Danger,
+                        .Content = $"Fehler beim Laden der Tags: {ex.Message}",
+                        .Timeout = TimeSpan.FromSeconds(3)
+                    }
                     fehlermeldung.Show()
                 End Try
             End Using
         End Using
     End Sub
+
+    ' Methode zum Laden der Artikel für einen bestimmten Tag
+    Private Sub LoadArticlesForTag(tagId As Long)
+        ArticlesList.Clear()
+        Dim query As String = "SELECT a.id, a.Titel FROM T_Knowledge_Base_Artikelverwaltung a
+                               INNER JOIN T_Knowledge_Base_ArtikelTags at ON a.id = at.ArtikelId
+                               WHERE at.TagId = @TagId ORDER BY a.Titel"
+
+        Using verbindung As New SQLiteConnection(connectionString)
+            Using cmd As New SQLiteCommand(query, verbindung)
+                cmd.Parameters.AddWithValue("@TagId", tagId)
+                Try
+                    verbindung.Open()
+                    Using reader As SQLiteDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim article As New Artikel()
+                            article.ID = reader.GetInt64(0)
+                            article.Titel = reader.GetString(1)
+                            ArticlesList.Add(article)
+                        End While
+                    End Using
+                Catch ex As Exception
+                    If OperatingSystem.IsWindowsVersionAtLeast(7) Then
+                        Dim fehlermeldung As New Snackbar(AppSnackbar) With {
+                            .Title = "Fehler",
+                            .Appearance = ControlAppearance.Danger,
+                            .Content = $"Fehler beim Laden der Artikel: {ex.Message}",
+                            .Timeout = TimeSpan.FromSeconds(3)
+                        }
+                        fehlermeldung.Show()
+                    End If
+                End Try
+            End Using
+        End Using
+    End Sub
+
+
 
     ' Methode zum Anzeigen des Umbenennungsdialogs mit Animation
     Private Sub ShowRenameDialog()
@@ -111,11 +162,11 @@ Public Class Tagübersicht
             Dim newTagName As String = NewTagNameTextBox.Text.Trim()
             If String.IsNullOrEmpty(newTagName) Then
                 Dim warningSnackbar As New Snackbar(AppSnackbar) With {
-                        .Title = "Warnung",
-                        .Appearance = ControlAppearance.Danger,
-                        .Content = "Der Tag-Name darf nicht leer sein.",
-                        .Timeout = TimeSpan.FromSeconds(2)
-                    }
+                    .Title = "Warnung",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = "Der Tag-Name darf nicht leer sein.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
                 warningSnackbar.Show()
                 Return
             End If
@@ -123,11 +174,11 @@ Public Class Tagübersicht
             ' Überprüfen Sie auf Duplikate
             If AllTags.Any(Function(t) t.TagName.Equals(newTagName, StringComparison.OrdinalIgnoreCase) AndAlso t.TagId <> selectedTagForRename.TagId) Then
                 Dim warningSnackbar As New Snackbar(AppSnackbar) With {
-                        .Title = "Warnung",
-                        .Appearance = ControlAppearance.Danger,
-                        .Content = "Ein Tag mit diesem Namen existiert bereits.",
-                        .Timeout = TimeSpan.FromSeconds(2)
-                    }
+                    .Title = "Warnung",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = "Ein Tag mit diesem Namen existiert bereits.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
                 warningSnackbar.Show()
                 Return
             End If
@@ -150,30 +201,30 @@ Public Class Tagübersicht
                     Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
                     If rowsAffected > 0 Then
                         Dim successSnackbar As New Snackbar(AppSnackbar) With {
-                                .Title = "Erfolg",
-                                .Appearance = ControlAppearance.Success,
-                                .Content = "Tag erfolgreich umbenannt.",
-                                .Timeout = TimeSpan.FromSeconds(2)
-                            }
+                            .Title = "Erfolg",
+                            .Appearance = ControlAppearance.Success,
+                            .Content = "Tag erfolgreich umbenannt.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         successSnackbar.Show()
                         LoadTags()
                         HideRenameDialog()
                     Else
                         Dim errorSnackbar As New Snackbar(AppSnackbar) With {
-                                .Title = "Fehler",
-                                .Appearance = ControlAppearance.Danger,
-                                .Content = "Tag konnte nicht gefunden oder aktualisiert werden.",
-                                .Timeout = TimeSpan.FromSeconds(2)
-                            }
+                            .Title = "Fehler",
+                            .Appearance = ControlAppearance.Danger,
+                            .Content = "Tag konnte nicht gefunden oder aktualisiert werden.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         errorSnackbar.Show()
                     End If
                 Catch ex As Exception
                     Dim errorSnackbar As New Snackbar(AppSnackbar) With {
-                            .Title = "Fehler",
-                            .Appearance = ControlAppearance.Danger,
-                            .Content = $"Fehler beim Umbenennen des Tags: {ex.Message}",
-                            .Timeout = TimeSpan.FromSeconds(3)
-                        }
+                        .Title = "Fehler",
+                        .Appearance = ControlAppearance.Danger,
+                        .Content = $"Fehler beim Umbenennen des Tags: {ex.Message}",
+                        .Timeout = TimeSpan.FromSeconds(3)
+                    }
                     errorSnackbar.Show()
                 End Try
             End Using
@@ -216,22 +267,24 @@ Public Class Tagübersicht
                         ' Transaktion festschreiben
                         transaction.Commit()
                         Dim successSnackbar As New Snackbar(AppSnackbar) With {
-                                .Title = "Erfolg",
-                                .Appearance = ControlAppearance.Success,
-                                .Content = "Tag erfolgreich gelöscht.",
-                                .Timeout = TimeSpan.FromSeconds(2)
-                            }
+                            .Title = "Erfolg",
+                            .Appearance = ControlAppearance.Success,
+                            .Content = "Tag erfolgreich gelöscht.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         successSnackbar.Show()
                         LoadTags()
+                        ' Leeren der Artikelanzeige
+                        ArticlesList.Clear()
                     Else
                         ' Falls kein Tag gelöscht wurde, Transaktion zurückrollen
                         transaction.Rollback()
                         Dim errorSnackbar As New Snackbar(AppSnackbar) With {
-                                .Title = "Fehler",
-                                .Appearance = ControlAppearance.Danger,
-                                .Content = "Tag konnte nicht gefunden oder gelöscht werden.",
-                                .Timeout = TimeSpan.FromSeconds(2)
-                            }
+                            .Title = "Fehler",
+                            .Appearance = ControlAppearance.Danger,
+                            .Content = "Tag konnte nicht gefunden oder gelöscht werden.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         errorSnackbar.Show()
                     End If
                 End Using
@@ -239,11 +292,11 @@ Public Class Tagübersicht
                 ' Bei Fehlern Transaktion zurückrollen
                 transaction.Rollback()
                 Dim errorSnackbar As New Snackbar(AppSnackbar) With {
-                        .Title = "Fehler",
-                        .Appearance = ControlAppearance.Danger,
-                        .Content = $"Fehler beim Löschen des Tags: {ex.Message}",
-                        .Timeout = TimeSpan.FromSeconds(3)
-                    }
+                    .Title = "Fehler",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = $"Fehler beim Löschen des Tags: {ex.Message}",
+                    .Timeout = TimeSpan.FromSeconds(3)
+                }
                 errorSnackbar.Show()
             End Try
         End Using
@@ -273,32 +326,45 @@ Public Class Tagübersicht
     End Sub
 
     ' Event-Handler für das Klicken auf eine Karte
-    ' Event-Handler für das Klicken auf eine Karte
-    Private Sub Card_Click(sender As Object, e As RoutedEventArgs)
-        Dim element As FrameworkElement = TryCast(sender, FrameworkElement)
-        If element IsNot Nothing AndAlso element.DataContext IsNot Nothing Then
-            Dim tag As Tag = TryCast(element.DataContext, Tag)
-            If tag IsNot Nothing Then
-                ' Beispielaktion: Anzeigen einer Nachricht
-                Dim infoSnackbar As New Snackbar(AppSnackbar) With {
-                .Title = "Tag ausgewählt",
-                .Appearance = ControlAppearance.Info,
-                .Content = $"Tag '{tag.TagName}' wurde ausgewählt.",
-                .Timeout = TimeSpan.FromSeconds(2)
-            }
-                infoSnackbar.Show()
-
-                ' Hier kannst du weitere Aktionen implementieren, z.B. Details anzeigen
-            End If
+    Private Sub CardAction_Click(sender As Object, e As RoutedEventArgs)
+        ' Casten des senders zu CardAction
+        Dim cardAction As Wpf.Ui.Controls.CardAction = TryCast(sender, Wpf.Ui.Controls.CardAction)
+        If cardAction Is Nothing Then
+            ' Falls das Casting fehlschlägt, beenden
+            Return
         End If
+
+        ' Abrufen des Tag-Objekts aus dem DataContext
+        Dim tag As Tag = TryCast(cardAction.DataContext, Tag)
+        If tag Is Nothing Then
+            ' Falls das Tag-Objekt nicht gefunden wird, beenden
+            Return
+        End If
+
+        ' Setzen des ausgewählten Tags
+        selectedTag = tag
+
+        ' Laden der Artikel für das ausgewählte Tag
+        LoadArticlesForTag(tag.TagId)
+
+        ' Anzeigen einer Benachrichtigung (Snackbar)
+        Dim infoSnackbar As New Snackbar(AppSnackbar) With {
+        .Title = "Tag ausgewählt",
+        .Appearance = ControlAppearance.Info,
+        .Content = $"Artikel für Tag '{tag.TagName}' wurden geladen.",
+        .Timeout = TimeSpan.FromSeconds(2)
+    }
+        infoSnackbar.Show()
     End Sub
 
 
-    ' Event-Handler für die Kontextmenü-Option "Umbenennen"
+
+
+    ' Event-Handler für den Button "Umbenennen"
     Private Sub RenameButton_Click(sender As Object, e As RoutedEventArgs)
-        Dim menuItem As MenuItem = TryCast(sender, MenuItem)
-        If menuItem IsNot Nothing AndAlso menuItem.DataContext IsNot Nothing Then
-            Dim selectedTag As Tag = TryCast(menuItem.DataContext, Tag)
+        Dim button As Button = TryCast(sender, Button)
+        If button IsNot Nothing AndAlso button.DataContext IsNot Nothing Then
+            Dim selectedTag As Tag = TryCast(button.DataContext, Tag)
             If selectedTag IsNot Nothing Then
                 selectedTagForRename = selectedTag
                 NewTagNameTextBox.Text = selectedTagForRename.TagName
@@ -314,16 +380,22 @@ Public Class Tagübersicht
                 infoSnackbar.Show()
             End If
         End If
+        e.Handled = True
     End Sub
 
-    ' Event-Handler für die Kontextmenü-Option "Löschen"
+    ' Event-Handler für den Button "Löschen"
     Private Sub DeleteButton_Click(sender As Object, e As RoutedEventArgs)
-        Dim menuItem As MenuItem = TryCast(sender, MenuItem)
-        If menuItem IsNot Nothing AndAlso menuItem.DataContext IsNot Nothing Then
-            Dim selectedTag As Tag = TryCast(menuItem.DataContext, Tag)
+        Dim button As Button = TryCast(sender, Button)
+        If button IsNot Nothing AndAlso button.DataContext IsNot Nothing Then
+            Dim selectedTag As Tag = TryCast(button.DataContext, Tag)
             If selectedTag IsNot Nothing Then
-                ' Bestätigungsdialog
-                Dim result As System.Windows.MessageBoxResult = System.Windows.MessageBox.Show($"Möchten Sie den Tag '{selectedTag.TagName}' wirklich löschen?", "Tag löschen", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
+                ' Bestätigungsdialog anzeigen
+                Dim result As System.Windows.MessageBoxResult = System.Windows.MessageBox.Show(
+                    $"Möchten Sie den Tag '{selectedTag.TagName}' wirklich löschen?",
+                    "Tag löschen",
+                    System.Windows.MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning)
+
                 If result = System.Windows.MessageBoxResult.Yes Then
                     DeleteTag(selectedTag.TagId)
                 End If
@@ -338,6 +410,10 @@ Public Class Tagübersicht
                 infoSnackbar.Show()
             End If
         End If
+        e.Handled = True
     End Sub
+
+
+
 
 End Class

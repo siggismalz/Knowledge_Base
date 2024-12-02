@@ -232,7 +232,7 @@ Class Artikel_anzeigen
             Dim tocItem As New TOCItem With {
                 .Titel = headingText,
                 .Level = headingLevel,
-                .headingId = headingId
+                .HeadingId = headingId
             }
 
             If currentParents.Count = 0 Then
