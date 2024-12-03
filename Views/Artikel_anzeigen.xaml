@@ -137,7 +137,8 @@
                                 <ui:Button x:Name="B_Artikel_als_PDF_speichern" Content="Als PDF downloaden" 
                                            Icon="{ui:SymbolIcon ArrowDownload24}"
                                            BorderBrush="Transparent" Background="Transparent"
-                                           Height="50" FontSize="24" HorizontalAlignment="Stretch"/>
+                                           Height="50" FontSize="24" HorizontalAlignment="Stretch"
+                                           Click="B_Artikel_als_PDF_speichern_Click"/>
                             </StackPanel>
                         </ui:CardAction>
                     </Grid>
@@ -149,11 +150,13 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Titel und Bearbeiten-Button -->
+                        <!-- Titel und Bearbeiten-/Favoriten-Button -->
                         <Grid Grid.Row="0" Margin="10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Neue Spalte für Favoriten -->
                             </Grid.ColumnDefinitions>
 
                             <Border Background="Transparent" HorizontalAlignment="Stretch" CornerRadius="5" Padding="5,0,0,5">
@@ -163,7 +166,18 @@
                             <!-- Bearbeiten-Button -->
                             <ui:Button x:Name="B_Artikel_bearbeiten" Content="Bearbeiten" Icon="{ui:SymbolIcon Edit24}" 
                                        Margin="10,10,0,10" HorizontalAlignment="Right" Click="B_Artikel_bearbeiten_Click"
-                                       Grid.Column="1" Cursor="Hand" VerticalAlignment="Top"/>
+                                       Grid.Column="1" Cursor="Hand" VerticalAlignment="Top" Appearance="Success"/>
+
+                            <!-- Favoriten-Button -->
+                            <ui:Button x:Name="B_Favoriten" Content="Favorit" 
+                                       Icon="{ui:SymbolIcon Star24}" 
+                                       Margin="10,10,10,10" 
+                                       HorizontalAlignment="Right" 
+                                       Click="B_Favoriten_Click"
+                                       Grid.Column="2" 
+                                       Cursor="" 
+                                       VerticalAlignment="Top" 
+                                       Appearance="Transparent"/>
                         </Grid>
 
                         <!-- Browser -->

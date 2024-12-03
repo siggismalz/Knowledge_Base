@@ -4,7 +4,7 @@
                           xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                           xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:local="clr-namespace:Knowledge_Base"
-             StartupUri="Startseite.xaml">
+             StartupUri="Login.xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

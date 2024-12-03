@@ -6,5 +6,5 @@
     Public Shared Erstellt_am As Date
     Public Property Inhalt As String
     Public Shared Tags As List(Of String)
-
+    Public Property SymbolPath As String
 End Class

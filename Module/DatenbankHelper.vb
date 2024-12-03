@@ -120,6 +120,15 @@ Module DatenbankHelper
         FOREIGN KEY(User_Id) REFERENCES T_Knowledge_Base_Userverwaltung(id)
     );
 
+-- Tabelle T_Favoriten erstellen
+CREATE TABLE IF NOT EXISTS T_Favoriten (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ArtikelId INTEGER NOT NULL,
+    UserId INTEGER NOT NULL,
+    Erstellungsdatum DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (ArtikelId, UserId)
+);
+
     -- Tabelle T_Knowledge_Base_Bilder erstellen
     CREATE TABLE IF NOT EXISTS T_Knowledge_Base_Bilder (
         Id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -27,29 +27,30 @@
                 PaneTitle="Hauptmenü" x:Name="Sidebar">
 
                 <ui:NavigationView.MenuItems>
-                    <ui:NavigationViewItem x:Name="B_Startseite"
+                    <Separator Foreground="Green"/>
+                    <ui:NavigationViewItem x:Name="B_Startseite" Margin="0,15,0,0"
                         Content="Startseite"
                         Icon="{ui:SymbolIcon Home24}"/>
-                    <ui:NavigationViewItem x:Name="B_Profil"
+                    <ui:NavigationViewItem x:Name="B_Profil" Margin="0,10,0,0"
                         Content="Mein Profil"
                         Icon="{ui:SymbolIcon Accessibility48}" />
-                    <ui:NavigationViewItem x:Name="B_Artikel_erstellen"
+                    <ui:NavigationViewItem x:Name="B_Artikel_erstellen" Margin="0,10,0,0"
                         Content="Artikel erstellen"
                         Icon="{ui:SymbolIcon Bookadd24}" />
-                    <ui:NavigationViewItem x:Name="B_Tagsuche"
+                    <ui:NavigationViewItem x:Name="B_Tagsuche" Margin="0,10,0,0"
                         Content="Tags und Kategorieren"
                         Icon="{ui:SymbolIcon Tag24}"/>
-                    <ui:NavigationViewItem x:Name="B_Explorer"
+                    <ui:NavigationViewItem x:Name="B_Explorer" Margin="0,10,0,0"
                         Content="Explorer"
                         Icon="{ui:SymbolIcon Library24}"/>
-                    <ui:NavigationViewItem x:Name="B_EDEKAI"
+                    <ui:NavigationViewItem x:Name="B_EDEKAI" Margin="0,10,0,0"
                         Content="EDEKA Intelligence"
                         Icon="{ui:SymbolIcon BotSparkle24}"/>
-                    <ui:NavigationViewItem x:Name="B_einstellungen"
-                        Content="Einstellungen"
-                        Icon="{ui:SymbolIcon Settings48}"/>
+                    <ui:NavigationViewItem x:Name="B_Favortiz" Margin="0,10,0,0"
+                        Content="Favoriten"
+                        Icon="{ui:SymbolIcon Star24}"/>
                     <ui:NavigationViewItem
-                        Content="Auswertungen"
+                        Content="Auswertungen"  Margin="0,10,0,0"
                         Icon="{ui:SymbolIcon Datahistogram24}" x:Name="B_Auswertungen" />
                 </ui:NavigationView.MenuItems>
             </ui:NavigationView>

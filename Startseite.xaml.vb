@@ -25,4 +25,8 @@ Public Class Startseite
     Private Sub B_Tagsuche_Click(sender As Object, e As RoutedEventArgs) Handles B_Tagsuche.Click
         Me.MainFrame.Navigate(New Tagübersicht)
     End Sub
+
+    Private Sub B_Favortiz_Click(sender As Object, e As RoutedEventArgs) Handles B_Favortiz.Click
+        Me.MainFrame.Navigate(New FavoritenAnzeigen)
+    End Sub
 End Class

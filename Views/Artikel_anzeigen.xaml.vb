@@ -1,25 +1,25 @@
-﻿Imports System.Data.SQLite
+﻿Imports HtmlAgilityPack
+Imports Microsoft.Win32
+Imports Newtonsoft.Json.Linq
 Imports System.Collections.ObjectModel
+Imports System.Data.SQLite
 Imports System.Text.RegularExpressions
-Imports HtmlAgilityPack
-Imports System.IO ' Für File.WriteAllBytes
-Imports Microsoft.Win32 ' Für SaveFileDialog
-Imports Newtonsoft.Json.Linq ' Für JSON Parsing
-
+Imports System.IO
 Class Artikel_anzeigen
     Public Property BreadcrumbItems As ObservableCollection(Of BreadcrumbItem)
-    Public Artikel As New Artikel ' Assuming you have a model class for the article
+    Public Property Artikel As New Artikel ' Assuming you have a model class for the article
     Private isProgrammaticSelection As Boolean = False
-
 
     Public Sub New()
         InitializeComponent()
+        ErstelleFavoritenTabelle()
     End Sub
 
     Public Sub New(breadcrumbItems As ObservableCollection(Of BreadcrumbItem))
         InitializeComponent()
         Me.BreadcrumbItems = New ObservableCollection(Of BreadcrumbItem)(breadcrumbItems)
         Me.DataContext = Me
+        ErstelleFavoritenTabelle()
         InitializeAsync()
     End Sub
 
@@ -27,6 +27,23 @@ Class Artikel_anzeigen
         Await Browser_laden()
         Artikel_laden(Artikel.ID)
         Artikel_anzeigen()
+    End Sub
+
+    ''' <summary>
+    ''' Erstellt die Favoriten-Tabelle, falls sie nicht existiert.
+    ''' </summary>
+    Private Sub ErstelleFavoritenTabelle()
+        Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
+        Using verbindung As New SQLiteConnection($"Data Source={dbFilePath};Version=3;")
+            verbindung.Open()
+            Dim createTableCmd As New SQLiteCommand("
+                CREATE TABLE IF NOT EXISTS T_Favoriten (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ArtikelId INTEGER NOT NULL UNIQUE,
+                    Erstellungsdatum DATETIME DEFAULT CURRENT_TIMESTAMP
+                );", verbindung)
+            createTableCmd.ExecuteNonQuery()
+        End Using
     End Sub
 
     Public Async Function Browser_laden() As Task
@@ -88,10 +105,10 @@ Class Artikel_anzeigen
 
         ' Aktuelle Version hinzufügen
         versionsListData.Add(New ArtikelVersion() With {
-        .VersionId = 0, ' 0 kennzeichnet die aktuelle Version
-        .Versioniert_am = Artikel.Erstellt_am,
-        .Titel = Artikel.Titel
-    })
+            .VersionId = 0, ' 0 kennzeichnet die aktuelle Version
+            .Versioniert_am = Artikel.Erstellt_am,
+            .Titel = Artikel.Titel
+        })
 
         ' Alte Versionen des Artikels abrufen
         Dim versionsCommand As New SQLiteCommand("SELECT VersionId, Titel, Versioniert_am FROM T_Knowledge_Base_Artikelversionen WHERE ArtikelId = @Id ORDER BY Versioniert_am DESC", verbindung)
@@ -100,10 +117,10 @@ Class Artikel_anzeigen
 
         While versionsReader.Read()
             versionsListData.Add(New ArtikelVersion() With {
-            .VersionId = Convert.ToInt32(versionsReader("VersionId")),
-            .Versioniert_am = Convert.ToDateTime(versionsReader("Versioniert_am")),
-            .Titel = versionsReader("Titel").ToString()
-        })
+                .VersionId = Convert.ToInt32(versionsReader("VersionId")),
+                .Versioniert_am = Convert.ToDateTime(versionsReader("Versioniert_am")),
+                .Titel = versionsReader("Titel").ToString()
+            })
         End While
         versionsReader.Close()
 
@@ -122,9 +139,8 @@ Class Artikel_anzeigen
         verbindung.Close()
     End Sub
 
-
     Private Sub Artikel_anzeigen()
-        Me.T_Erstellt_am.Text = Artikel.Erstellt_am
+        Me.T_Erstellt_am.Text = Artikel.Erstellt_am.ToString("dd.MM.yyyy HH:mm")
         Me.T_Autor.Text = Artikel.Autor
         Me.T_Artikeltitel.Text = Artikel.Titel
 
@@ -146,6 +162,9 @@ Class Artikel_anzeigen
 
         ' Tags an das UI binden
         Me.TagsList.ItemsSource = Artikel.Tags
+
+        ' Aktualisiere den Favoriten-Button
+        SetzeFavoritenButtonStatus(IstFavorit(Artikel.ID))
     End Sub
 
     Private Sub BreadcrumbItem_Click(sender As Object, e As RoutedEventArgs)
@@ -339,13 +358,11 @@ Class Artikel_anzeigen
         End If
     End Sub
 
-
     Private Sub LadeUndZeigeAktuelleVersion()
         ' Artikel neu laden
         Artikel_laden(Artikel.ID)
         Artikel_anzeigen()
     End Sub
-
 
     Private Sub LadeUndZeigeAlteVersion(versionId As Integer)
         Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
@@ -387,5 +404,78 @@ Class Artikel_anzeigen
             verbindung.Close()
         End Using
     End Sub
+
+    Private Function IstFavorit(artikelId As Integer) As Boolean
+        Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
+        Using verbindung As New SQLiteConnection($"Data Source={dbFilePath};Version=3;")
+            verbindung.Open()
+            Dim cmd As New SQLiteCommand("SELECT COUNT(1) FROM T_Favoriten WHERE ArtikelId = @ArtikelId AND UserId = @UserId", verbindung)
+            cmd.Parameters.AddWithValue("@ArtikelId", artikelId)
+            cmd.Parameters.AddWithValue("@UserId", User.UserID)
+            Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+            Return count > 0
+        End Using
+    End Function
+
+    Private Sub FügeFavoritHinzu(artikelId As Integer)
+        Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
+        Using verbindung As New SQLiteConnection($"Data Source={dbFilePath};Version=3;")
+            verbindung.Open()
+            Dim cmd As New SQLiteCommand("INSERT OR IGNORE INTO T_Favoriten (ArtikelId, UserId) VALUES (@ArtikelId, @UserId)", verbindung)
+            cmd.Parameters.AddWithValue("@ArtikelId", artikelId)
+            cmd.Parameters.AddWithValue("@UserId", User.UserID)
+            cmd.ExecuteNonQuery()
+        End Using
+    End Sub
+
+    Private Sub EntferneFavorit(artikelId As Integer)
+        Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
+        Using verbindung As New SQLiteConnection($"Data Source={dbFilePath};Version=3;")
+            verbindung.Open()
+            Dim cmd As New SQLiteCommand("DELETE FROM T_Favoriten WHERE ArtikelId = @ArtikelId AND UserId = @UserId", verbindung)
+            cmd.Parameters.AddWithValue("@ArtikelId", artikelId)
+            cmd.Parameters.AddWithValue("@UserId", User.UserID)
+            cmd.ExecuteNonQuery()
+        End Using
+    End Sub
+
+    Private Sub SetzeFavoritenButtonStatus(isFavorit As Boolean)
+        If isFavorit Then
+            B_Favoriten.Content = "Favorit"
+            B_Favoriten.Icon = New Wpf.Ui.Controls.SymbolIcon() With {
+                .Symbol = Wpf.Ui.Controls.SymbolRegular.Star24, ' Entsprechender Symbolwert aus der Enumeration
+                .Filled = True ' Gefülltes Symbol
+            }
+        Else
+            B_Favoriten.Content = "Favoritieren"
+            B_Favoriten.Icon = New Wpf.Ui.Controls.SymbolIcon() With {
+                .Symbol = Wpf.Ui.Controls.SymbolRegular.Star24, ' Entsprechender Symbolwert aus der Enumeration
+                .Filled = False ' Leeres Symbol
+            }
+        End If
+    End Sub
+
+    Private Sub B_Favoriten_Click(sender As Object, e As RoutedEventArgs)
+        ' Button deaktivieren, um Mehrfachklicks zu verhindern
+        B_Favoriten.IsEnabled = False
+
+        Try
+            Dim artikelId As Integer = Artikel.ID ' Stellen Sie sicher, dass Artikel.ID korrekt gesetzt ist
+
+            If IstFavorit(artikelId) Then
+                EntferneFavorit(artikelId)
+                SetzeFavoritenButtonStatus(False)
+                MsgBox("Artikel aus den Favoriten entfernt.", MsgBoxStyle.Information, "Favorit")
+            Else
+                FügeFavoritHinzu(artikelId)
+                SetzeFavoritenButtonStatus(True)
+                MsgBox("Artikel zu den Favoriten hinzugefügt.", MsgBoxStyle.Information, "Favorit")
+            End If
+        Finally
+            ' Button nach Abschluss wieder aktivieren
+            B_Favoriten.IsEnabled = True
+        End Try
+    End Sub
+
 
 End Class
