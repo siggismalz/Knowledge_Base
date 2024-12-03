@@ -49,9 +49,6 @@
                     <ui:NavigationViewItem x:Name="B_Favortiz" Margin="0,10,0,0"
                         Content="Favoriten"
                         Icon="{ui:SymbolIcon Star24}"/>
-                    <ui:NavigationViewItem
-                        Content="Auswertungen"  Margin="0,10,0,0"
-                        Icon="{ui:SymbolIcon Datahistogram24}" x:Name="B_Auswertungen" />
                 </ui:NavigationView.MenuItems>
             </ui:NavigationView>
         </StackPanel>
