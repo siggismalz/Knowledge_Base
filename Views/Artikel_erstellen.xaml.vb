@@ -602,40 +602,39 @@ Public Class Artikel_erstellen
 
         Return htmlContent
     End Function
-
     Private Function ConvertWordToHtml(wordFilePath As String) As String
-        ' Überprüfen, ob die Datei existiert
         If Not File.Exists(wordFilePath) Then
             Throw New FileNotFoundException("Die angegebene Word-Datei wurde nicht gefunden.", wordFilePath)
         End If
 
+        ' Erstellen eines temporären Dateipfads
+        Dim tempFilePath As String = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() & Path.GetExtension(wordFilePath))
+        File.Copy(wordFilePath, tempFilePath, True)
+
         Try
-            ' Dokument laden
-            Dim document As New Aspose.Words.Document(wordFilePath)
-
-            ' HTML-Speicher in MemoryStream
-            Using memoryStream As New MemoryStream()
-                ' HTML-Optionen konfigurieren
-                Dim saveOptions As New HtmlSaveOptions()
-                saveOptions.ExportImagesAsBase64 = True ' Bilder als Base64 einbetten
-                saveOptions.SaveFormat = SaveFormat.Html
-
-                saveOptions.PrettyFormat = True ' Für lesbares HTML
-                saveOptions.CssStyleSheetType = CssStyleSheetType.Inline ' CSS inline einbetten
-
-                ' Dokument als HTML in den MemoryStream speichern
-                document.Save(memoryStream, saveOptions)
-
-                ' Konvertierung des MemoryStream in einen String
-                memoryStream.Position = 0
-                Using reader As New StreamReader(memoryStream)
-                    Dim htmlContent As String = reader.ReadToEnd()
-                    Return htmlContent
+            Using fileStream As New FileStream(tempFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                Dim document As New Aspose.Words.Document(fileStream)
+                Using memoryStream As New MemoryStream()
+                    Dim saveOptions As New HtmlSaveOptions() With {
+                    .ExportImagesAsBase64 = True,
+                    .SaveFormat = SaveFormat.Html,
+                    .PrettyFormat = True,
+                    .CssStyleSheetType = CssStyleSheetType.Inline
+                }
+                    document.Save(memoryStream, saveOptions)
+                    memoryStream.Position = 0
+                    Using reader As New StreamReader(memoryStream)
+                        Return reader.ReadToEnd()
+                    End Using
                 End Using
             End Using
         Catch ex As Exception
-            ' Fehlerbehandlung
             Throw New ApplicationException("Fehler beim Konvertieren des Word-Dokuments in HTML.", ex)
+        Finally
+            ' Löschen der temporären Datei
+            If File.Exists(tempFilePath) Then
+                File.Delete(tempFilePath)
+            End If
         End Try
     End Function
 
@@ -677,8 +676,66 @@ Public Class Artikel_erstellen
     End Function
 
     Private Async Function InsertHtmlIntoEditor(htmlContent As String) As Task
+        ' HTML-Inhalt laden
+        Dim htmlDoc As New HtmlDocument()
+        htmlDoc.LoadHtml(htmlContent)
+
+        ' 1. Entferne das erste <img>-Tag
+        Dim firstImage As HtmlNode = htmlDoc.DocumentNode.SelectSingleNode("//img")
+        If firstImage IsNot Nothing Then
+            firstImage.ParentNode.RemoveChild(firstImage, True)
+        End If
+
+        ' 2. Entferne alle Elemente, die das Wort "Aspose" enthalten
+        ' Dies kann in Textinhalt oder in Attributen vorkommen
+        Dim nodesWithAspose As HtmlNodeCollection = htmlDoc.DocumentNode.SelectNodes("//*[contains(text(), 'Aspose') or contains(@*, 'Aspose')]")
+
+        If nodesWithAspose IsNot Nothing Then
+            ' ToList() erstellen, um eine Kopie der Sammlung zu verwenden
+            For Each node In nodesWithAspose.ToList()
+                If node.ParentNode IsNot Nothing Then
+                    node.ParentNode.RemoveChild(node, True)
+                End If
+            Next
+        End If
+
+        ' 3. Entferne spezifische unerwünschte Textabschnitte
+        ' Definiere die zu entfernenden Texte
+        Dim unwantedTexts As String() = {
+        "Evaluation Only. Created with Aspose.Words. Copyright 2003-2024 Aspose Pty Ltd.",
+        "https://products.aspose.com/words/temporary-license/",
+        "Created with an evaluation copy of Aspose.Words. To remove all limitations, you can use Free Temporary License "
+    }
+
+        ' Suche nach Textknoten, die diese unerwünschten Texte enthalten, und entferne sie
+        Dim textNodes = htmlDoc.DocumentNode.SelectNodes("//text()")
+        If textNodes IsNot Nothing Then
+            For Each textNode As HtmlTextNode In textNodes.OfType(Of HtmlTextNode)()
+                For Each unwantedText In unwantedTexts
+                    If textNode.Text.Contains(unwantedText) Then
+                        ' Entferne den unerwünschten Text aus dem Textknoten
+                        textNode.Text = textNode.Text.Replace(unwantedText, "").Trim()
+                    End If
+                Next
+            Next
+        End If
+
+        ' Optional: Entferne leere Textknoten, die nach dem Entfernen der unerwünschten Texte entstehen könnten
+        If textNodes IsNot Nothing Then
+            For Each textNode As HtmlTextNode In textNodes.OfType(Of HtmlTextNode)()
+                If String.IsNullOrWhiteSpace(textNode.Text) Then
+                    If textNode.ParentNode IsNot Nothing Then
+                        textNode.ParentNode.RemoveChild(textNode, False)
+                    End If
+                End If
+            Next
+        End If
+
+        ' Überarbeitetes HTML abrufen
+        Dim modifiedHtmlContent As String = htmlDoc.DocumentNode.OuterHtml
+
         ' HTML-Inhalt in einen JSON-kompatiblen String konvertieren
-        Dim jsonHtmlContent As String = JsonConvert.SerializeObject(htmlContent)
+        Dim jsonHtmlContent As String = JsonConvert.SerializeObject(modifiedHtmlContent)
 
         ' JavaScript-Code zum Einfügen des HTML-Inhalts
         ' Stellen Sie sicher, dass der CKEditor-Instanzname korrekt ist (z.B., 'editor')
@@ -712,11 +769,15 @@ Public Class Artikel_erstellen
             End Using
         Catch ex As Exception
             ' Fehlerbehandlung
-            MsgBox($"Fehler bei der Konvertierung des PDF zu HTML: {ex.Message}", MsgBoxStyle.Critical, "Konvertierungsfehler")
+            Dim snackbar As New Snackbar(SnackbarPresenter) With {
+                .Title = "Fehler",
+                .Appearance = ControlAppearance.Danger,
+                .Content = $"Fehler bei der Konvertierung des PDF zu HTML: {ex.Message}",
+                .Timeout = TimeSpan.FromSeconds(5)}
+            snackbar.Show()
             Return String.Empty
         End Try
     End Function
-
 
     Private Async Sub B_PDF_Click(sender As Object, e As RoutedEventArgs) Handles B_PDF.Click
         Try
@@ -760,11 +821,22 @@ Public Class Artikel_erstellen
                 ' HTML-Inhalt in den CKEditor einfügen
                 Await InsertHtmlIntoEditor(htmlContent)
 
-                MsgBox("Das PDF wurde erfolgreich in den Editor eingefügt.", MsgBoxStyle.Information, "Erfolg")
+                ' Erfolgsmeldung anzeigen
+                Dim snackbar As New Snackbar(SnackbarPresenter) With {
+                    .Title = "Erfolg",
+                    .Appearance = ControlAppearance.Success,
+                    .Content = "Das PDF wurde erfolgreich in den Editor eingefügt.",
+                    .Timeout = TimeSpan.FromSeconds(2)}
+                snackbar.Show()
             End If
         Catch ex As Exception
             ' Fehlerbehandlung
-            MsgBox($"Ein Fehler ist aufgetreten: {ex.Message}", MsgBoxStyle.Critical, "Fehler")
+            Dim snackbar As New Snackbar(SnackbarPresenter) With {
+                .Title = "Fehler",
+                .Appearance = ControlAppearance.Danger,
+                .Content = $"Ein Fehler ist aufgetreten: {ex.Message}",
+                .Timeout = TimeSpan.FromSeconds(5)}
+            snackbar.Show()
         End Try
     End Sub
 

@@ -98,8 +98,7 @@
                 </Grid>
             </Grid>
 
-            <wv2:WebView2 Grid.Row="3" x:Name="WebViewControl" HorizontalAlignment="Stretch" 
-                          VerticalAlignment="Stretch" Margin="15"/>
+            <wv2:WebView2 Grid.Row="1" x:Name="WebViewControl" Margin="15,130,15,1" Grid.RowSpan="2"/>
         </Grid>
     </Border>
 </Page>
