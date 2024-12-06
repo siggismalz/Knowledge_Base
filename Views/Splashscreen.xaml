@@ -1,0 +1,40 @@
+﻿<Window x:Class="Splashscreen"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        Title="Splashscreen"
+        Height="450"
+        Width="750"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
+    <wpfui:Card Background="White" Margin="25">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="350"/>
+                <ColumnDefinition Width="400"/>
+            </Grid.ColumnDefinitions>
+            <!-- Logo und Titel -->
+            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="50,0,0,0" 
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                <Image Source="/statics/wiki_logo.png" HorizontalAlignment="Left" Height="44" Width="48"/>
+                <TextBlock Text="Knowledge-Base" FontSize="28" FontWeight="Bold" HorizontalAlignment="Left" Foreground="Black"
+                           VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+            <!-- Ladeanzeige -->
+            <StackPanel Grid.Column="0" Orientation="Vertical" Margin="50,70,0,0" HorizontalAlignment="Left" 
+                        VerticalAlignment="Center">
+                <TextBlock Text="Lade Ressourcen..." FontSize="17" FontWeight="SemiBold" Foreground="Black"/>
+                <mah:MetroProgressBar Foreground="Blue" IsIndeterminate="False" x:Name="progressBar_" Value="0" Height="5" Width="280" Minimum="0" Maximum="100" ValueChanged="progressBar__ValueChanged"/>
+            </StackPanel>
+            <!-- Bild -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image Source="/statics/splashscreen.jpg" Height="306" Width="278"/>
+            </StackPanel>
+        </Grid>
+    </wpfui:Card>
+</Window>

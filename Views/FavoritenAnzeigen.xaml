@@ -7,38 +7,59 @@
       mc:Ignorable="d" 
       d:DesignHeight="1000" d:DesignWidth="1800" Foreground="White"
       Title="FavoritenAnzeigen">
+
     <Grid Background="#292e37">
         <!-- Überschrift -->
         <ui:TextBlock Text="Meine Favoriten" FontTypography="Title" Margin="20,20,0,0" Foreground="White"/>
 
-        <!-- Favoritenliste als CardActions -->
-        <ScrollViewer Margin="20,80,20,20">
-            <ItemsControl x:Name="FavoritenItemsControl" ItemsSource="{Binding FavoritenListe}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel IsItemsHost="True" Orientation="Horizontal"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ui:CardAction Margin="10" Width="250" Height="100" Cursor="Hand" Click="CardAction_Click">
-                            <Grid Margin="5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <!-- Bild hinzufügen -->
-                                <Image Source="{Binding SymbolPath}" Width="50" Height="50" Margin="0,0,10,0"/>
-                                <!-- Textbereich -->
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <ui:TextBlock Text="{Binding Titel}" FontTypography="Subtitle" Margin="0,0,0,5" TextWrapping="Wrap"/>
-                                    <ui:TextBlock Text="{Binding Erstellt_am, StringFormat='Erstellt am: {0:dd.MM.yyyy HH:mm}'}" FontTypography="Caption" Foreground="Gray"/>
-                                </StackPanel>
-                            </Grid>
-                        </ui:CardAction>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <!-- Favoritenliste und No-Data-Bild überlagern -->
+        <Grid Margin="20,80,20,20">
+            <!-- Favoritenliste als CardActions -->
+            <ScrollViewer>
+                <ItemsControl x:Name="FavoritenItemsControl" ItemsSource="{Binding FavoritenListe}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel IsItemsHost="True" Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:CardAction Margin="10" Width="250" Height="100" Cursor="Hand" Click="CardAction_Click">
+                                <Grid Margin="5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Bild hinzufügen -->
+                                    <Image Source="{Binding SymbolPath}" Width="50" Height="50" Margin="0,0,10,0"/>
+                                    <!-- Textbereich -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <ui:TextBlock Text="{Binding Titel}" FontTypography="Subtitle" Margin="0,0,0,5" TextWrapping="Wrap"/>
+                                        <ui:TextBlock Text="{Binding Erstellt_am, StringFormat='Erstellt am: {0:dd.MM.yyyy HH:mm}'}" FontTypography="Caption" Foreground="Gray"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ui:CardAction>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- No-Data-Bild, das nur angezeigt wird, wenn keine Favoriten vorhanden sind -->
+            <Image Source="/statics/no-data.png" 
+                   HorizontalAlignment="Center" 
+                   VerticalAlignment="Center"
+                   Width="784" Height="689">
+                <Image.Style>
+                    <Style TargetType="Image">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasItems, ElementName=FavoritenItemsControl}" Value="False">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </Grid>
     </Grid>
 </Page>

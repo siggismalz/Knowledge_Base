@@ -13,7 +13,9 @@
     <None Remove="statics\Card_robo.png" />
     <None Remove="statics\File.png" />
     <None Remove="statics\Folder.png" />
+    <None Remove="statics\no-data.png" />
     <None Remove="statics\profil.png" />
+    <None Remove="statics\Splashscreen.jpg" />
     <None Remove="statics\wiki_logo.png" />
   </ItemGroup>
 
@@ -35,6 +37,7 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="LiveCharts.Wpf" Version="0.9.7" />
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.1.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="python" Version="3.12.0" />
@@ -52,7 +55,9 @@
     </Resource>
     <Resource Include="statics\File.png" />
     <Resource Include="statics\Folder.png" />
+    <Resource Include="statics\no-data.png" />
     <Resource Include="statics\profil.png" />
+    <Resource Include="statics\Splashscreen.jpg" />
     <Resource Include="statics\wiki_logo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
