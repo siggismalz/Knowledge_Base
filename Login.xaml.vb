@@ -130,7 +130,7 @@ Public Class Login
     End Sub
 
     ' Registrierung-Klick-Event
-    Private Async Sub B_Registrieren_Click(sender As Object, e As RoutedEventArgs) Handles B_Registrieren.Click
+    Private Async Sub B_Registrieren_Click(sender As Object, e As RoutedEventArgs) 'Handles B_Registrieren.Click
         Try
             ' Ladeindikator anzeigen und aktivieren
             Register_ProgressRing.Visibility = Visibility.Visible
