@@ -5,10 +5,18 @@ Imports System.Collections.ObjectModel
 Imports System.Data.SQLite
 Imports System.Text.RegularExpressions
 Imports System.IO
-Class Artikel_anzeigen
+Imports Wpf.Ui.Controls
+Partial Public Class Artikel_anzeigen
+    Inherits Page
+
     Public Property BreadcrumbItems As ObservableCollection(Of BreadcrumbItem)
     Public Property Artikel As New Artikel ' Assuming you have a model class for the article
     Private isProgrammaticSelection As Boolean = False
+
+    Public Sub SetArticleId(articleId As Long)
+        Artikel.ID = articleId
+        InitializeAsync()
+    End Sub
 
     Public Sub New()
         InitializeComponent()
@@ -475,6 +483,18 @@ Class Artikel_anzeigen
             ' Button nach Abschluss wieder aktivieren
             B_Favoriten.IsEnabled = True
         End Try
+    End Sub
+
+    Private Sub Tag_Clicked(sender As Object, e As MouseButtonEventArgs)
+        Dim stackPanel As StackPanel = TryCast(sender, StackPanel)
+        If stackPanel IsNot Nothing AndAlso stackPanel.DataContext IsNot Nothing Then
+            Dim tagName As String = stackPanel.DataContext.ToString()
+
+            ' Navigiere zur Tagübersicht-Seite mit dem ausgewählten Tag
+            Dim tagÜbersichtPage As New Tagübersicht(tagName)
+            NavigationService.Navigate(tagÜbersichtPage)
+
+        End If
     End Sub
 
 

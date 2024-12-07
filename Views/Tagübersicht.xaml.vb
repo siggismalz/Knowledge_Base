@@ -27,6 +27,7 @@ Public Class Tagübersicht
     ' Variable zur Speicherung des aktuell ausgewählten Tags
     Private selectedTag As Tag = Nothing
 
+    ' Konstruktor für die Tagübersicht-Seite ohne vorausgewählten Tag
     Public Sub New()
         InitializeComponent()
         DataContext = Me ' Setzt den DataContext auf diese Klasse
@@ -38,6 +39,44 @@ Public Class Tagübersicht
 
         ' Setzt die ItemsSource der AutoSuggestBox
         TagSearchBox.ItemsSource = AllTags.Select(Function(t) t.TagName).ToList()
+    End Sub
+
+    ' Konstruktor für die Tagübersicht-Seite mit einem vorausgewählten Tag
+    Public Sub New(selectedTagName As String)
+        InitializeComponent()
+        DataContext = Me
+
+        ' Initialisieren der CollectionView für die Filterung
+        TagsViewInternal = CollectionViewSource.GetDefaultView(TagsList)
+
+        LoadTags()
+
+        ' Setzt die ItemsSource der AutoSuggestBox
+        TagSearchBox.ItemsSource = AllTags.Select(Function(t) t.TagName).ToList()
+
+        ' Setze den Filter basierend auf dem ausgewählten Tag
+        If Not String.IsNullOrEmpty(selectedTagName) Then
+            ' Filter anwenden
+            TagsViewInternal.Filter = Function(item As Object)
+                                          Dim tag = TryCast(item, Tag)
+                                          Return tag IsNot Nothing AndAlso tag.TagName.Equals(selectedTagName, StringComparison.OrdinalIgnoreCase)
+                                      End Function
+
+            ' Artikel für den ausgewählten Tag laden
+            Dim selectedTagObj = AllTags.FirstOrDefault(Function(t) t.TagName.Equals(selectedTagName, StringComparison.OrdinalIgnoreCase))
+            If selectedTagObj IsNot Nothing Then
+                LoadArticlesForTag(selectedTagObj.TagId)
+
+                ' Optional: Snackbar-Benachrichtigung anzeigen
+                Dim infoSnackbar As New Snackbar(AppSnackbar) With {
+                    .Title = "Tag ausgewählt",
+                    .Appearance = ControlAppearance.Info,
+                    .Content = $"Artikel für Tag '{selectedTagObj.TagName}' wurden geladen.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
+                infoSnackbar.Show()
+            End If
+        End If
     End Sub
 
     ' Öffentliche Eigenschaft zur Bindung an das ItemsControl
@@ -126,8 +165,6 @@ Public Class Tagübersicht
             End Using
         End Using
     End Sub
-
-
 
     ' Methode zum Anzeigen des Umbenennungsdialogs mit Animation
     Private Sub ShowRenameDialog()
@@ -325,41 +362,6 @@ Public Class Tagübersicht
         End If
     End Sub
 
-    ' Event-Handler für das Klicken auf eine Karte
-    Private Sub CardAction_Click(sender As Object, e As RoutedEventArgs)
-        ' Casten des senders zu CardAction
-        Dim cardAction As Wpf.Ui.Controls.CardAction = TryCast(sender, Wpf.Ui.Controls.CardAction)
-        If cardAction Is Nothing Then
-            ' Falls das Casting fehlschlägt, beenden
-            Return
-        End If
-
-        ' Abrufen des Tag-Objekts aus dem DataContext
-        Dim tag As Tag = TryCast(cardAction.DataContext, Tag)
-        If tag Is Nothing Then
-            ' Falls das Tag-Objekt nicht gefunden wird, beenden
-            Return
-        End If
-
-        ' Setzen des ausgewählten Tags
-        selectedTag = tag
-
-        ' Laden der Artikel für das ausgewählte Tag
-        LoadArticlesForTag(tag.TagId)
-
-        ' Anzeigen einer Benachrichtigung (Snackbar)
-        Dim infoSnackbar As New Snackbar(AppSnackbar) With {
-        .Title = "Tag ausgewählt",
-        .Appearance = ControlAppearance.Info,
-        .Content = $"Artikel für Tag '{tag.TagName}' wurden geladen.",
-        .Timeout = TimeSpan.FromSeconds(2)
-    }
-        infoSnackbar.Show()
-    End Sub
-
-
-
-
     ' Event-Handler für den Button "Umbenennen"
     Private Sub RenameButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = TryCast(sender, Button)
@@ -413,7 +415,59 @@ Public Class Tagübersicht
         e.Handled = True
     End Sub
 
+    ' Event-Handler für das Klicken auf eine Tag-Karte
+    Private Sub CardAction_Click(sender As Object, e As RoutedEventArgs)
+        ' Casten des senders zu CardAction
+        Dim cardAction As Wpf.Ui.Controls.CardAction = TryCast(sender, Wpf.Ui.Controls.CardAction)
+        If cardAction Is Nothing Then
+            Return
+        End If
 
+        ' Abrufen des Tag-Objekts aus dem DataContext
+        Dim tag As Tag = TryCast(cardAction.DataContext, Tag)
+        If tag Is Nothing Then
+            Return
+        End If
 
+        ' Navigieren zur Tagübersicht-Seite mit dem ausgewählten Tag
+        Dim tagÜbersichtPage As New Tagübersicht(tag.TagName)
+        NavigationService.Navigate(tagÜbersichtPage)
+
+        ' Optional: Snackbar-Benachrichtigung anzeigen
+        Dim infoSnackbar As New Snackbar(AppSnackbar) With {
+            .Title = "Tag ausgewählt",
+            .Appearance = ControlAppearance.Info,
+            .Content = $"Navigiere zur Tagübersicht für '{tag.TagName}'.",
+            .Timeout = TimeSpan.FromSeconds(2)
+        }
+        infoSnackbar.Show()
+    End Sub
+
+    ' Event-Handler für das Klicken auf einen Artikel in der verknüpften Artikel-Liste
+    Private Sub ArticleCard_Click(sender As Object, e As RoutedEventArgs)
+        Dim cardAction As Wpf.Ui.Controls.CardAction = TryCast(sender, Wpf.Ui.Controls.CardAction)
+        If cardAction Is Nothing Then
+            Return
+        End If
+
+        Dim artikel As Artikel = TryCast(cardAction.DataContext, Artikel)
+        If artikel Is Nothing Then
+            Return
+        End If
+
+        ' Navigieren zur Artikel_anzeigen-Seite mit der Artikel-ID
+        Dim artikelAnzeigenPage As New Artikel_anzeigen()
+        artikelAnzeigenPage.SetArticleId(Artikel.ID) ' Implementieren Sie eine Methode, um die Artikel-ID zu setzen
+        NavigationService.Navigate(artikelAnzeigenPage)
+
+        ' Optional: Snackbar-Benachrichtigung anzeigen
+        Dim infoSnackbar As New Snackbar(AppSnackbar) With {
+            .Title = "Artikel ausgewählt",
+            .Appearance = ControlAppearance.Info,
+            .Content = $"Navigiere zur Anzeige des Artikels '{Artikel.Titel}'.",
+            .Timeout = TimeSpan.FromSeconds(2)
+        }
+        infoSnackbar.Show()
+    End Sub
 
 End Class
