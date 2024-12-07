@@ -458,6 +458,7 @@ Public Class Artikel_erstellen
     End Function
 
     Private Async Function LoadArticleContent() As Task
+        Await Browser.CoreWebView2.ExecuteScriptAsync("CKEDITOR.instances.editor.setData('');")
         If ArtikelId.HasValue Then
             Using connection As New SQLiteConnection(ConnectionString)
                 Await connection.OpenAsync()
