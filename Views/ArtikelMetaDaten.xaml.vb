@@ -172,7 +172,6 @@ Public Class ArtikelMetaDaten
     Private Sub CancelButton_Click(sender As Object, e As RoutedEventArgs)
         Me.DialogResult = False
         Me.Close()
-
     End Sub
 
     ' Event-Handler zum Verschieben des Fensters durch Klicken auf den Border

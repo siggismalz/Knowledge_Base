@@ -396,7 +396,7 @@ Public Class Artikel_erstellen
                                     ' Fehlerbehandlungscode hier einfügen
                                 End Try
                             Else
-                                ' Der Benutzer hat abgebrochen
+                                Browser.Visibility = Visibility.Visible
                                 Return
                             End If
                         End If

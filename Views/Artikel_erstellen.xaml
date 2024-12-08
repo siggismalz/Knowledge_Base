@@ -30,7 +30,7 @@
 
                 <ui:Button x:Name="B_Word" Content="Word" Grid.Column="1" Background="Blue" Margin="0,0,10,0" Cursor="Hand"/>
                 <ui:Button x:Name="B_PDF" Content="PDF" Grid.Column="2" Background="Red" Margin="0,0,50,0" Cursor="Hand"/>
-                <ui:Button x:Name="B_Artikel_speichern" Cursor="Hand" Appearance="Success" Grid.Column="3" Content="Speichern" Icon="{ui:SymbolIcon Save28}" Margin="0,0,10,0"/>
+                <ui:Button x:Name="B_Artikel_speichern" Cursor="Hand" Appearance="Success" Grid.Column="2" Content="Speichern" Icon="{ui:SymbolIcon Save28}" Margin="98,0,0,13" Grid.ColumnSpan="2" VerticalAlignment="Bottom"/>
             </Grid>
 
             <wv2:WebView2 x:Name="Browser" Source="about:blank" Grid.Row="1"/>
