@@ -29,4 +29,8 @@ Public Class Startseite
     Private Sub B_Favortiz_Click(sender As Object, e As RoutedEventArgs) Handles B_Favortiz.Click
         Me.MainFrame.Navigate(New FavoritenAnzeigen)
     End Sub
+
+    Private Sub B_EDEKAI_Click(sender As Object, e As RoutedEventArgs) Handles B_EDEKAI.Click
+        Me.MainFrame.Navigate(New Chatbot)
+    End Sub
 End Class

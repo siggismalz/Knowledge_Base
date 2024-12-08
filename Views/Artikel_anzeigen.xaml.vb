@@ -487,11 +487,9 @@ Partial Public Class Artikel_anzeigen
             If IstFavorit(artikelId) Then
                 EntferneFavorit(artikelId)
                 SetzeFavoritenButtonStatus(False)
-                MsgBox("Artikel aus den Favoriten entfernt.", MsgBoxStyle.Information, "Favorit")
             Else
                 FügeFavoritHinzu(artikelId)
                 SetzeFavoritenButtonStatus(True)
-                MsgBox("Artikel zu den Favoriten hinzugefügt.", MsgBoxStyle.Information, "Favorit")
             End If
         Finally
             ' Button nach Abschluss wieder aktivieren
