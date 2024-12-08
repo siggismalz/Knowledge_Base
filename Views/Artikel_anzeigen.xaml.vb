@@ -21,15 +21,28 @@ Partial Public Class Artikel_anzeigen
     Public Sub New()
         InitializeComponent()
         ErstelleFavoritenTabelle()
-    End Sub
-
-    Public Sub New(breadcrumbItems As ObservableCollection(Of BreadcrumbItem))
-        InitializeComponent()
-        Me.BreadcrumbItems = New ObservableCollection(Of BreadcrumbItem)(breadcrumbItems)
+        Me.BreadcrumbItems = New ObservableCollection(Of BreadcrumbItem)()
         Me.DataContext = Me
-        ErstelleFavoritenTabelle()
         InitializeAsync()
     End Sub
+
+
+    Public Sub New(Optional breadcrumbItems As ObservableCollection(Of BreadcrumbItem) = Nothing)
+        InitializeComponent()
+        ErstelleFavoritenTabelle()
+
+        If breadcrumbItems IsNot Nothing Then
+            Me.BreadcrumbItems = New ObservableCollection(Of BreadcrumbItem)(breadcrumbItems)
+        Else
+            ' Wenn keine übergeben wurden, eine neue leere Liste erstellen
+            Me.BreadcrumbItems = New ObservableCollection(Of BreadcrumbItem)()
+        End If
+
+        Me.DataContext = Me
+        InitializeAsync()
+    End Sub
+
+
 
     Private Async Sub InitializeAsync()
         Await Browser_laden()
