@@ -77,7 +77,6 @@ Public Class Artikel_erstellen
                         Dim artikeltitel As String = String.Empty
                         Dim ordner As String = String.Empty
                         Dim tagsList As New List(Of String)
-
                         If ArtikelId.HasValue Then
                             ' BEARBEITUNG EINES BESTEHENDEN ARTIKELS
 
@@ -458,14 +457,24 @@ Public Class Artikel_erstellen
     End Function
 
     Private Async Function LoadArticleContent() As Task
+
+        If Browser.CoreWebView2 Is Nothing Then
+            Await Browser.EnsureCoreWebView2Async()
+        End If
+
+
+
         Await Browser.CoreWebView2.ExecuteScriptAsync("CKEDITOR.instances.editor.setData('');")
         If ArtikelId.HasValue Then
+            Await Task.Delay(1000)
             Using connection As New SQLiteConnection(ConnectionString)
                 Await connection.OpenAsync()
                 Dim command As New SQLiteCommand("SELECT Artikel_Inhalt_HTML FROM T_Knowledge_Base_Artikelverwaltung WHERE Id = @Id", connection)
                 command.Parameters.AddWithValue("@Id", Me.ArtikelId)
                 Dim reader As SQLiteDataReader = Await command.ExecuteReaderAsync()
+                Await Task.Delay(1000)
                 If Await reader.ReadAsync() Then
+                    Await Task.Delay(1000)
                     Dim articleContent As String = reader("Artikel_Inhalt_HTML").ToString()
                     ' Bilder im HTML-Inhalt wiederherstellen
                     articleContent = Await RestoreImagesInHtml(articleContent, Me.ArtikelId.Value)

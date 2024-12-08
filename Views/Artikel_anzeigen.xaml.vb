@@ -356,6 +356,7 @@ Partial Public Class Artikel_anzeigen
 
     Private Sub B_Artikel_bearbeiten_Click(sender As Object, e As RoutedEventArgs)
         ' Navigieren Sie zur Editor-Seite und übergeben Sie die Artikel-ID
+
         Dim editorPage As New Artikel_erstellen(Artikel.ID, BreadcrumbItems)
         NavigationService.Navigate(editorPage)
     End Sub
