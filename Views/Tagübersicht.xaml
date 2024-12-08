@@ -9,11 +9,11 @@
       Background="#1E1E2E" 
       Title="Tags">
 
-    <!-- Übergeordnete Grid für die gesamte Seite -->
+    <!-- Übergeordnetes Grid für die gesamte Seite -->
     <Grid>
+
         <!-- Hauptinhalt innerhalb einer Border -->
-        <Border Background="#292e37" Margin="20" CornerRadius="15" 
-                Effect="{DynamicResource ShadowEffect}">
+        <Border Background="#292e37" Margin="20" CornerRadius="15" Effect="{DynamicResource ShadowEffect}">
             <Grid Margin="20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -24,6 +24,8 @@
                     <!-- Tags -->
                     <RowDefinition Height="Auto"/>
                     <!-- Verknüpfte Artikel -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Snackbar -->
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
@@ -52,39 +54,43 @@
                 </StackPanel>
 
                 <!-- Tags Übersicht -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,30">
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
                     <ItemsControl ItemsSource="{Binding TagsView}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" ItemWidth="250" ItemHeight="150"/>
+                                <WrapPanel Orientation="Horizontal" ItemWidth="320" ItemHeight="150"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <ui:CardAction Icon="Label" 
-                                               Width="240" 
-                                               Height="140" 
+                                               Width="290" 
+                                               Height="120" 
                                                Margin="10" 
                                                Click="CardAction_Click"
                                                Background="#3C3F4A"
-                                               Cursor="Hand">
-                                    <Border>
+                                               Cursor="Hand"
+                                               Padding="5">
+                                    <Border CornerRadius="10">
                                         <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                            <!-- Anzeige des Tag-Namens -->
+                                            <!-- Anzeige des Tag-Namens mit Ellipsen bei Überlänge -->
                                             <ui:TextBlock Text="{Binding TagName}" 
-                                                          FontSize="20" 
+                                                          FontSize="16" 
                                                           FontWeight="SemiBold" 
                                                           Foreground="#FFFFFF"
                                                           HorizontalAlignment="Center"
-                                                          Margin="0,10,0,0"/>
+                                                          Margin="0,10,0,0"
+                                                          TextTrimming="CharacterEllipsis"
+                                                          TextWrapping="NoWrap"
+                                                          MaxWidth="200"/>
 
                                             <!-- Buttons für Aktionen -->
                                             <StackPanel Orientation="Horizontal" 
                                                         HorizontalAlignment="Center" 
-                                                        Margin="0,20,0,0">
+                                                        Margin="0,10,0,0">
                                                 <ui:Button Content="Umbenennen" 
                                                            Click="RenameButton_Click" 
-                                                           Width="100" 
+                                                           Width="120" 
                                                            Margin="5,0"
                                                            Appearance="Secondary"
                                                            Background="#4E5D6C"
@@ -142,56 +148,64 @@
                     </ScrollViewer>
                 </StackPanel>
 
-                <!-- Overlay für den Umbenennungsdialog -->
-                <Grid x:Name="DialogOverlay" Background="#80000000" Visibility="Collapsed">
-                    <Border Width="450" Height="300" Background="#292e37" CornerRadius="15" 
-                            HorizontalAlignment="Center" VerticalAlignment="Center" Padding="25" 
-                            Effect="{DynamicResource ShadowEffect}">
-                        <StackPanel>
-                            <ui:TextBlock Text="Tag umbenennen" 
-                                          FontSize="28" 
-                                          FontWeight="Bold" 
-                                          Foreground="#FFFFFF" 
-                                          Margin="0,0,0,25" 
-                                          HorizontalAlignment="Center"/>
-                            <ui:TextBox x:Name="NewTagNameTextBox" 
-                                        PlaceholderText="Neuer Tag-Name" 
-                                        FontSize="18" 
-                                        Margin="0,0,0,25" 
-                                        Background="#3C3F4A"
-                                        Foreground="#FFFFFF"
-                                        BorderBrush="#555A6A"
-                                        Padding="10"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <ui:Button Content="Abbrechen" 
-                                           Click="CancelRename_Click" 
-                                           Width="120" 
-                                           Margin="10,0"
-                                           Appearance="Danger"
-                                           Background="#E74C3C"
-                                           Foreground="#FFFFFF"
-                                           CornerRadius="5"
-                                           Cursor="Hand"/>
-                                <ui:Button Content="Speichern" 
-                                           Click="SaveRename_Click" 
-                                           Width="120" 
-                                           Margin="10,0"
-                                           Appearance="Success"
-                                           Background="#27AE60"
-                                           Foreground="#FFFFFF"
-                                           CornerRadius="5"
-                                           Cursor="Hand"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </Grid>
+                <!-- Snackbar unter den verknüpften Artikeln -->
+                <ui:SnackbarPresenter x:Name="AppSnackbar" 
+                                      Grid.Row="4"
+                                      HorizontalAlignment="Center" 
+                                      VerticalAlignment="Bottom" 
+                                      Margin="0,0,0,30"/>
             </Grid>
         </Border>
 
-        <!-- SnackbarPresenter am unteren Rand der Seite -->
-        <ui:SnackbarPresenter x:Name="AppSnackbar" 
-                              HorizontalAlignment="Center" 
-                              VerticalAlignment="Bottom" 
-                              Margin="0,0,0,30"/>
+        <!-- Overlay für den Umbenennungsdialog -->
+        <Grid x:Name="DialogOverlay" 
+              Background="#80000000" 
+              Visibility="Collapsed"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              Panel.ZIndex="999">
+
+            <Border Width="450" Height="250" Background="#292e37" CornerRadius="15" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Padding="25" 
+                    Effect="{DynamicResource ShadowEffect}">
+                <StackPanel>
+                    <ui:TextBlock Text="Tag umbenennen" 
+                                  FontSize="28" 
+                                  FontWeight="Bold" 
+                                  Foreground="#FFFFFF" 
+                                  Margin="0,0,0,25" 
+                                  HorizontalAlignment="Center"/>
+                    <ui:TextBox x:Name="NewTagNameTextBox" 
+                                PlaceholderText="Neuer Tag-Name" 
+                                FontSize="18" 
+                                Margin="0,0,0,25" 
+                                Background="#3C3F4A"
+                                Foreground="#FFFFFF"
+                                BorderBrush="#555A6A"
+                                Padding="10"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <ui:Button Content="Abbrechen" 
+                                   Click="CancelRename_Click" 
+                                   Width="120" 
+                                   Margin="10,0"
+                                   Appearance="Danger"
+                                   Background="#E74C3C"
+                                   Foreground="#FFFFFF"
+                                   CornerRadius="5"
+                                   Cursor="Hand"/>
+                        <ui:Button Content="Speichern" 
+                                   Click="SaveRename_Click" 
+                                   Width="120" 
+                                   Margin="10,0"
+                                   Appearance="Success"
+                                   Background="#27AE60"
+                                   Foreground="#FFFFFF"
+                                   CornerRadius="5"
+                                   Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
     </Grid>
 </Page>
