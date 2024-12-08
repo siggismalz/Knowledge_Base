@@ -1,8 +1,10 @@
 ﻿Imports System.Collections.ObjectModel
+Imports System.ComponentModel
 Imports System.Data.SQLite
 Imports KnwoledgeBase.Artikel_anzeigen
 Imports Wpf.Ui.Controls
 Imports System.IO
+Imports System.Windows.Data
 
 Class Explorer
 
@@ -10,6 +12,9 @@ Class Explorer
     Public Property BreadcrumbItems As ObservableCollection(Of BreadcrumbItem)
     Public Property currentParentId As Integer = 0
     Private startPoint As Point
+
+    ' Hinzugefügt: CollectionView zur Unterstützung von Filtern
+    Private cardsView As ICollectionView
 
     Private Sub B_Card_PreviewMouseLeftButtonDown(sender As Object, e As MouseButtonEventArgs)
         startPoint = e.GetPosition(Nothing)
@@ -74,8 +79,6 @@ Class Explorer
         End If
     End Sub
 
-
-
     ' Parameterloser Konstruktor, erforderlich für WPF
     Public Sub New()
         InitializeComponent()
@@ -91,7 +94,6 @@ Class Explorer
         Me.DataContext = Me
         Explorerinhalt_laden(parentId)
     End Sub
-
 
     Private Sub B_Card_Click(sender As Object, e As RoutedEventArgs)
         Dim cardAction As CardAction = CType(sender, CardAction)
@@ -114,7 +116,6 @@ Class Explorer
                     Artikel.ID = card.Artikel_ID.Value
                     ' Artikel laden
                     NavigationService.Navigate(New Artikel_anzeigen(Me.BreadcrumbItems))
-
                 Else
                     Dim fehlermeldung As New Snackbar(SnackbarPresenter) With {
                         .Title = "Artikel_ID ist nicht verfügbar",
@@ -149,10 +150,8 @@ Class Explorer
             Dim istVerzeichnis As Boolean = Convert.ToBoolean(reader("ist_verzeichnis"))
             Dim symbolPath As String
             If istVerzeichnis Then
-                ' Pfad zum Ordnersymbol
                 symbolPath = "/statics/Folder.png"
             Else
-                ' Pfad zum Dateisymbol
                 symbolPath = "/statics/File.png"
             End If
 
@@ -162,17 +161,23 @@ Class Explorer
             End If
 
             cards.Add(New Explorer_Cards With {
-            .Titel = reader("Name").ToString(),
-            .ID = Convert.ToInt32(reader("id")),
-            .istVerzeichnis = istVerzeichnis,
-            .Symbol = New BitmapImage(New Uri(symbolPath, UriKind.Relative)),
-            .Artikel_ID = artikelId
-        })
+                .Titel = reader("Name").ToString(),
+                .ID = Convert.ToInt32(reader("id")),
+                .IstVerzeichnis = istVerzeichnis,
+                .Symbol = New BitmapImage(New Uri(symbolPath, UriKind.Relative)),
+                .Artikel_ID = artikelId
+            })
         End While
         reader.Close()
         verbindung.Close()
-        Me.Dynamic_cards.ItemsSource = cards
+
+        ' Setze die ItemsSource auf die CollectionView
+        cardsView = CollectionViewSource.GetDefaultView(cards)
+        cardsView.Filter = AddressOf ApplyFilters
+        Me.Dynamic_cards.ItemsSource = cardsView
+
         UpdateBreadcrumbs()
+        LoadTags() ' Tags für den Tag-Filter laden
     End Sub
 
     Private Sub UpdateBreadcrumbs()
@@ -219,12 +224,12 @@ Class Explorer
                 End If
 
                 Dim breadcrumbItem As New BreadcrumbItem With {
-                .DisplayName = reader("Name").ToString(),
-                .Id = Convert.ToInt32(reader("id")),
-                .ParentId = If(IsDBNull(reader("parent_id")), -1, Convert.ToInt32(reader("parent_id"))),
-                .IstVerzeichnis = istVerzeichnis,
-                .Artikel_ID = artikelId
-            }
+                    .DisplayName = reader("Name").ToString(),
+                    .Id = Convert.ToInt32(reader("id")),
+                    .ParentId = If(IsDBNull(reader("parent_id")), -1, Convert.ToInt32(reader("parent_id"))),
+                    .IstVerzeichnis = istVerzeichnis,
+                    .Artikel_ID = artikelId
+                }
                 pathItems.Insert(0, breadcrumbItem) ' Insert at the beginning of the list
                 tempParentId = breadcrumbItem.ParentId
             Else
@@ -239,19 +244,18 @@ Class Explorer
 
         ' Add root element
         pathItems.Insert(0, New BreadcrumbItem With {
-        .DisplayName = "Root",
-        .Id = 0,
-        .ParentId = -1,
-        .IstVerzeichnis = True,
-        .Artikel_ID = Nothing
-    })
+            .DisplayName = "Root",
+            .Id = 0,
+            .ParentId = -1,
+            .IstVerzeichnis = True,
+            .Artikel_ID = Nothing
+        })
 
         ' Update the BreadcrumbItems
         For Each breadcrumbItem In pathItems
             breadcrumbItems.Add(breadcrumbItem)
         Next
     End Sub
-
 
     Private Sub BreadcrumbItem_Click(sender As Object, e As RoutedEventArgs)
         Dim hyperlink As Hyperlink = CType(sender, Hyperlink)
@@ -279,6 +283,7 @@ Class Explorer
                 End Using
                 ' Aktualisiere die UI
                 card.Titel = newName
+                cardsView.Refresh()
             Catch ex As Exception
                 Dim fehlermeldung As New Snackbar(SnackbarPresenter) With {
                     .Title = "Fehler beim Umbenennen des Elements",
@@ -313,7 +318,6 @@ SELECT COUNT(*) FROM RecursiveCTE WHERE id = @targetId
         End Using
     End Function
 
-
     Private Sub DeleteMenuItem_Click(sender As Object, e As RoutedEventArgs)
         Dim menuItem As System.Windows.Controls.MenuItem = CType(sender, System.Windows.Controls.MenuItem)
         Dim card As Explorer_Cards = CType(menuItem.DataContext, Explorer_Cards)
@@ -341,6 +345,7 @@ DELETE FROM T_Knowledge_Base_Filesystem WHERE id IN (SELECT id FROM ItemsToDelet
                 End Using
                 ' Entferne das Element aus der ObservableCollection
                 cards.Remove(card)
+                cardsView.Refresh()
             Catch ex As Exception
                 Dim fehlermeldung As New Snackbar(SnackbarPresenter) With {
                     .Title = "Fehler beim Löschen des Elements",
@@ -375,6 +380,18 @@ DELETE FROM T_Knowledge_Base_Filesystem WHERE id IN (SELECT id FROM ItemsToDelet
                 Return
             End If
 
+            ' Überprüfen, ob das Verschieben einen Zyklus erzeugt
+            If IsDescendant(sourceCard.ID, targetCard.ID) Then
+                Dim fehlermeldung As New Snackbar(SnackbarPresenter) With {
+                    .Title = "Verschieben nicht möglich",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = "Das Verschieben würde einen Zyklus erzeugen.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
+                fehlermeldung.Show()
+                Return
+            End If
+
             ' Aktualisiere die parent_id in der Datenbank
             Try
                 Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
@@ -388,6 +405,7 @@ DELETE FROM T_Knowledge_Base_Filesystem WHERE id IN (SELECT id FROM ItemsToDelet
 
                 ' Entferne das Element aus der aktuellen Sammlung
                 cards.Remove(sourceCard)
+                cardsView.Refresh()
 
                 ' Optional: Aktuellen Ordnerinhalt neu laden
                 ' Explorerinhalt_laden(currentParentId)
@@ -442,24 +460,24 @@ DELETE FROM T_Knowledge_Base_Filesystem WHERE id IN (SELECT id FROM ItemsToDelet
                     connection.Open()
                     ' Neuer Ordner einfügen und die zuletzt eingefügte ID abrufen
                     Dim sql As New SQLiteCommand("
-    INSERT INTO T_Knowledge_Base_Filesystem (Name, ist_verzeichnis, parent_id) 
-    VALUES (@Name, 1, @ParentId);
-    SELECT last_insert_rowid();", connection)
+INSERT INTO T_Knowledge_Base_Filesystem (Name, ist_verzeichnis, parent_id) 
+VALUES (@Name, 1, @ParentId);
+SELECT last_insert_rowid();", connection)
 
                     sql.Parameters.AddWithValue("@Name", folderName)
                     sql.Parameters.AddWithValue("@ParentId", currentParentId)
 
                     Dim newId As Integer = Convert.ToInt32(sql.ExecuteScalar())
 
-
                     ' Ordner zur ObservableCollection hinzufügen
                     cards.Add(New Explorer_Cards With {
-                    .Titel = folderName,
-                    .ID = newId,
-                    .IstVerzeichnis = True,
-                    .Symbol = New BitmapImage(New Uri("/statics/Folder.png", UriKind.Relative)),
-                    .Artikel_ID = Nothing
-                })
+                        .Titel = folderName,
+                        .ID = newId,
+                        .IstVerzeichnis = True,
+                        .Symbol = New BitmapImage(New Uri("/statics/Folder.png", UriKind.Relative)),
+                        .Artikel_ID = Nothing
+                    })
+                    cardsView.Refresh()
                 End Using
             Catch ex As Exception
                 Dim Ordner_erstellen_Fehler As New Snackbar(SnackbarPresenter) With {
@@ -512,72 +530,90 @@ DELETE FROM T_Knowledge_Base_Filesystem WHERE id IN (SELECT id FROM ItemsToDelet
             Explorerinhalt_laden(currentParentId)
         Else
             ' Suche durchführen
-            PerformSearch(query)
+            ' Die Suchfunktion wird nun durch die Filterlogik abgedeckt
+            cardsView.Refresh()
         End If
     End Sub
 
 
-    Private Sub PerformSearch(query As String)
+    ' Methode zur Anwendung der Filter
+    Private Function ApplyFilters(obj As Object) As Boolean
+        Dim card As Explorer_Cards = TryCast(obj, Explorer_Cards)
+        If card Is Nothing Then Return False
+
+        ' Typ-Filter anwenden
+        Dim selectedType = CType(TypeFilterComboBox.SelectedItem, ComboBoxItem)
+        If selectedType IsNot Nothing AndAlso selectedType.Content.ToString() <> "Alle" Then
+            If selectedType.Content.ToString() = "Ordner" AndAlso Not card.IstVerzeichnis Then
+                Return False
+            ElseIf selectedType.Content.ToString() = "Datei" AndAlso card.IstVerzeichnis Then
+                Return False
+            End If
+        End If
+
+        ' Tag-Filter anwenden
+        Dim selectedTag = CType(TagFilterComboBox.SelectedItem, ComboBoxItem)
+        If selectedTag IsNot Nothing AndAlso selectedTag.Content.ToString() <> "Alle" Then
+            If card.Tags Is Nothing OrElse Not card.Tags.Split(New String() {", "}, StringSplitOptions.None).Contains(selectedTag.Content.ToString()) Then
+                Return False
+            End If
+        End If
+
+        ' Suchfilter anwenden
+        Dim query = T_Suchfeld.Text.Trim().ToLower()
+        If Not String.IsNullOrEmpty(query) Then
+            Dim titelMatch = card.Titel.ToLower().Contains(query)
+            Dim authorMatch = If(card.Author, "").ToLower().Contains(query)
+            Dim tagsMatch = If(card.Tags, "").ToLower().Contains(query)
+            Return titelMatch OrElse authorMatch OrElse tagsMatch
+        End If
+
+        Return True
+    End Function
+
+    ' Ereignis-Handler für Änderungen der Filter
+    Private Sub Filter_Changed(sender As Object, e As SelectionChangedEventArgs)
+        If cardsView IsNot Nothing Then
+            cardsView.Refresh()
+        End If
+    End Sub
+
+    ' Laden der verfügbaren Tags für den Tag-Filter
+    Private Sub LoadTags()
         Dim dbFilePath As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
         Using verbindung As New SQLiteConnection($"Data Source={dbFilePath};Version=3;")
             verbindung.Open()
 
-            ' Aktualisierte SQL-Abfrage
             Dim SQL As New SQLiteCommand("
-        SELECT DISTINCT f.id, f.Name, f.ist_verzeichnis, f.Artikel_ID, 
-                        a.Erstellt_von, a.Titel as ArtikelTitel, a.Artikel_Inhalt, 
-                        GROUP_CONCAT(t.TagName, ', ') as Tags
-        FROM T_Knowledge_Base_Filesystem f
-        LEFT JOIN T_Knowledge_Base_Artikelverwaltung a ON f.Artikel_ID = a.id
-        LEFT JOIN T_Knowledge_Base_ArtikelTags at ON a.id = at.ArtikelId
-        LEFT JOIN T_Knowledge_Base_Tags t ON at.TagId = t.TagId
-        WHERE f.Name LIKE @query 
-           OR a.Erstellt_von LIKE @query 
-           OR a.Titel LIKE @query
-           OR a.Artikel_Inhalt LIKE @query
-           OR t.TagName LIKE @query
-        GROUP BY f.id, f.Name, f.ist_verzeichnis, f.Artikel_ID, a.Erstellt_von, a.Titel, a.Artikel_Inhalt
-        ", verbindung)
-            SQL.Parameters.AddWithValue("@query", "%" & query & "%")
-
+                SELECT DISTINCT t.TagName
+                FROM T_Knowledge_Base_Tags t
+                INNER JOIN T_Knowledge_Base_ArtikelTags at ON t.TagId = at.TagId
+                ", verbindung)
             Dim reader As SQLiteDataReader = SQL.ExecuteReader()
-            Dim searchResults As New ObservableCollection(Of Explorer_Cards)
 
+            Dim tags As New List(Of String)()
             While reader.Read()
-                Dim istVerzeichnis As Boolean = Convert.ToBoolean(reader("ist_verzeichnis"))
-                Dim symbolPath As String = If(istVerzeichnis, "/statics/Folder.png", "/statics/File.png")
-
-                Dim artikelId As Integer? = Nothing
-                If Not istVerzeichnis AndAlso Not IsDBNull(reader("Artikel_ID")) Then
-                    artikelId = Convert.ToInt32(reader("Artikel_ID"))
-                End If
-
-                Dim cardTitle As String = If(Not istVerzeichnis AndAlso Not IsDBNull(reader("ArtikelTitel")),
-                                             reader("ArtikelTitel").ToString(),
-                                             reader("Name").ToString())
-
-                Dim author As String = If(Not IsDBNull(reader("Erstellt_von")), reader("Erstellt_von").ToString(), String.Empty)
-
-                Dim tags As String = If(Not IsDBNull(reader("Tags")), reader("Tags").ToString(), String.Empty)
-
-                searchResults.Add(New Explorer_Cards With {
-                    .Titel = cardTitle,
-                    .ID = Convert.ToInt32(reader("id")),
-                    .IstVerzeichnis = istVerzeichnis,
-                    .Symbol = New BitmapImage(New Uri(symbolPath, UriKind.Relative)),
-                    .Artikel_ID = artikelId,
-                    .Author = author,
-                    .Tags = tags
-                })
+                tags.Add(reader("TagName").ToString())
             End While
-
             reader.Close()
             verbindung.Close()
-            Me.Dynamic_cards.ItemsSource = searchResults
+
+            ' Füge die Tags zur ComboBox hinzu
+            TagFilterComboBox.Items.Clear()
+            TagFilterComboBox.Items.Add(New ComboBoxItem With {.Content = "Alle", .IsSelected = True})
+            For Each tagName As String In tags
+                TagFilterComboBox.Items.Add(New ComboBoxItem With {.Content = tagName})
+            Next
         End Using
     End Sub
 
-
-
+    ' Aktualisieren der PerformSearch-Methode, um die CollectionView zu nutzen
+    Private Sub PerformSearch(query As String)
+        ' Da wir bereits die Suchfunktion in ApplyFilters integriert haben,
+        ' müssen wir hier nur die CollectionView aktualisieren
+        If cardsView IsNot Nothing Then
+            cardsView.Refresh()
+        End If
+    End Sub
 
 End Class
