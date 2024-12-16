@@ -42,7 +42,8 @@ Public Class Splashscreen
 
     Private Sub OpenMainWindow()
         ' Öffne das Hauptfenster
-        Dim mainWindow As New Startseite()
+        CheckAndCreateDatabase()
+        Dim mainWindow As New Login()
         mainWindow.Show()
 
         ' Schließe das Splash-Fenster

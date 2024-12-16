@@ -244,6 +244,7 @@ Public Class Artikel_erstellen
                                     updateFilesystemCmd.Parameters.AddWithValue("@parent_id", parentId)
                                     updateFilesystemCmd.Parameters.AddWithValue("@ArtikelId", ArtikelId.Value)
                                     Await updateFilesystemCmd.ExecuteNonQueryAsync()
+                                    Await SaveArticleAsHtml(ArtikelId.Value, artikeltitel, modifiedHtmlContent)
                                 Else
                                     ' Eintrag erstellen
                                     Dim insertFilesystemCmd As New SQLiteCommand("
@@ -253,6 +254,8 @@ Public Class Artikel_erstellen
                                     insertFilesystemCmd.Parameters.AddWithValue("@parent_id", parentId)
                                     insertFilesystemCmd.Parameters.AddWithValue("@Artikel_ID", ArtikelId.Value)
                                     Await insertFilesystemCmd.ExecuteNonQueryAsync()
+                                    Await SaveArticleAsHtml(ArtikelId, artikeltitel, modifiedHtmlContent)
+
                                 End If
 
                                 ' Erfolgsmeldung anzeigen
@@ -849,5 +852,42 @@ Public Class Artikel_erstellen
             snackbar.Show()
         End Try
     End Sub
+
+    Private Async Function SaveArticleAsHtml(articleId As Integer, title As String, htmlContent As String) As Task
+        Try
+            ' Basisverzeichnis der Anwendung ermitteln
+            Dim baseDirectory As String = AppDomain.CurrentDomain.BaseDirectory
+
+            ' Definieren des Zielverzeichnisses 'lokale_Artikel'
+            Dim lokaleArtikelDir As String = Path.Combine(baseDirectory, "lokale_Artikel")
+
+            ' Überprüfen, ob das Verzeichnis existiert; falls nicht, erstellen
+            If Not Directory.Exists(lokaleArtikelDir) Then
+                Directory.CreateDirectory(lokaleArtikelDir)
+            End If
+
+            ' Titel des Artikels für den Dateinamen bereinigen
+            Dim invalidChars As Char() = Path.GetInvalidFileNameChars()
+            Dim safeTitle As String = String.Concat(title.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim()
+
+            ' Dateinamen festlegen, z.B. 'Artikel_123_Titel.html'
+            Dim fileName As String = $"Artikel_{articleId}_{safeTitle}.html"
+
+            ' Vollständigen Pfad zur Datei erstellen
+            Dim filePath As String = Path.Combine(lokaleArtikelDir, fileName)
+
+            ' HTML-Inhalt asynchron in die Datei schreiben
+            Await File.WriteAllTextAsync(filePath, htmlContent)
+        Catch ex As Exception
+            ' Fehlerbehandlung: Snackbar anzeigen
+            Dim fehlermeldung As New Snackbar(SnackbarPresenter) With {
+            .Title = "Fehler beim Speichern als HTML!",
+            .Appearance = ControlAppearance.Danger,
+            .Content = $"Der Artikel konnte nicht als HTML gespeichert werden: {ex.Message}",
+            .Timeout = TimeSpan.FromSeconds(5)}
+            fehlermeldung.Show()
+        End Try
+    End Function
+
 
 End Class
