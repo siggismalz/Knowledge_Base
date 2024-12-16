@@ -16,6 +16,7 @@
     <None Remove="statics\no-data.png" />
     <None Remove="statics\profil.png" />
     <None Remove="statics\Splashscreen.jpg" />
+    <None Remove="statics\wiki_logo.ico" />
     <None Remove="statics\wiki_logo.png" />
   </ItemGroup>
 
@@ -59,6 +60,7 @@
     <Resource Include="statics\no-data.png" />
     <Resource Include="statics\profil.png" />
     <Resource Include="statics\Splashscreen.jpg" />
+    <Resource Include="statics\wiki_logo.ico" />
     <Resource Include="statics\wiki_logo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

@@ -103,7 +103,7 @@
                                            FontSize="16"/>
                                 <TextBlock Text="{Binding Message}" 
                                            TextWrapping="Wrap" 
-                                           Foreground="White"
+                                           Foreground="Black"
                                            FontSize="14"
                                            MaxWidth="800" 
                                            HorizontalAlignment="Left" 
@@ -131,7 +131,7 @@
                      Padding="10"/>
 
                 <Button Content="Senden"
-                        Width="100"
+                        Width="76"
                         Height="40"
                         FontSize="14"
                         VerticalAlignment="Center"
