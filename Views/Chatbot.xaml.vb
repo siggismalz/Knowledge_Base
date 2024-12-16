@@ -95,15 +95,22 @@ Public Class ChatMessage
         Private ReadOnly PythonExePath As String
         Private ReadOnly FlaskScriptPath As String
 
-        Public Sub New()
-            ' Pfade zum Python-Interpreter und Flask-Skript
-            ' Passen Sie diese Pfade entsprechend Ihrer Umgebung an
+    Public Sub New()
+        ' Prüfen, ob die Anwendung als EXE läuft oder im Entwicklungsmodus ist
+        Dim isRunningAsExe As Boolean = Path.GetExtension(AppDomain.CurrentDomain.BaseDirectory).Equals(".exe", StringComparison.OrdinalIgnoreCase)
+
+        ' Pfade zum Python-Interpreter und Flask-Skript basierend auf dem Modus festlegen
+        If isRunningAsExe Then
+            PythonExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "python.exe")
+            FlaskScriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "KB_Offline_LLM", "server.py")
+        Else
             PythonExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "3.12.0", "tools", "python.exe")
             FlaskScriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "3.12.0", "tools", "KB_Offline_LLM", "server.py")
-        End Sub
+        End If
+    End Sub
 
-        ' Methode zum Starten des Flask-Servers
-        Public Sub StartServer()
+    ' Methode zum Starten des Flask-Servers
+    Public Sub StartServer()
             ' Prüfen, ob der Python-Interpreter existiert
             If Not File.Exists(PythonExePath) Then
                 Throw New FileNotFoundException($"Python-Interpreter nicht gefunden unter: {PythonExePath}")

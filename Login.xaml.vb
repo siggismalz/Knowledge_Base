@@ -6,12 +6,13 @@ Imports System.IO
 Imports System.Net.Mail
 Imports Knowledge_Base.Login
 Imports MahApps.Metro.Controls
-
+Imports CredentialManagement
 
 Public Class Login
     Public Sub New()
         InitializeComponent()
         DatenbankHelper.CheckAndCreateDatabase()
+        TryAutoFillLogin()
     End Sub
 
     ' Login-Klick-Event
@@ -25,7 +26,7 @@ Public Class Login
             ' Gib dem UI Zeit zur Aktualisierung
             Await Task.Delay(100) ' Kurze Verzögerung, damit das UI die Sichtbarkeitsänderung rendern kann
 
-            ' Deine bestehende Logik
+            ' Datenbankverbindung vorbereiten
             Dim dbDateipfad As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
             Dim verbindungsString As String = $"Data Source={dbDateipfad};Version=3;"
 
@@ -43,7 +44,7 @@ Public Class Login
                     If Await reader.ReadAsync() Then
                         Dim verifiziert As Integer = Convert.ToInt32(reader("Verifiziert"))
                         If verifiziert = 0 Then
-                            ' User muss den Bestätigungscode eingeben
+                            ' Benutzer muss den Bestätigungscode eingeben
                             User.Username = reader("Username").ToString()
                             User.UserID = Convert.ToInt32(reader("id"))
 
@@ -54,23 +55,26 @@ Public Class Login
                             User.PendingUserID = User.UserID
 
                             Dim infoSnackbar As New Snackbar(SnackbarPresenter) With {
-                            .Title = "Bestätigung erforderlich",
-                            .Appearance = ControlAppearance.Info,
-                            .Content = "Bitte geben Sie den per E-Mail erhaltenen Zahlencode ein.",
-                            .Timeout = TimeSpan.FromSeconds(4)
-                        }
+                                .Title = "Bestätigung erforderlich",
+                                .Appearance = ControlAppearance.Info,
+                                .Content = "Bitte geben Sie den per E-Mail erhaltenen Zahlencode ein.",
+                                .Timeout = TimeSpan.FromSeconds(4)
+                            }
                             infoSnackbar.Show()
                         Else
-                            ' User ist verifiziert, normalen Login fortsetzen
+                            ' Benutzer ist verifiziert, normalen Login fortsetzen
                             User.Username = reader("Username").ToString()
                             User.UserID = Convert.ToInt32(reader("id"))
 
+                            ' Speichern der Anmeldeinformationen
+                            SaveCredentials(email, passwort)
+
                             Dim erfolgLogin As New Snackbar(SnackbarPresenter) With {
-                            .Title = "Juhu!",
-                            .Appearance = ControlAppearance.Success,
-                            .Content = "Login erfolgreich.",
-                            .Timeout = TimeSpan.FromSeconds(2)
-                        }
+                                .Title = "Juhu!",
+                                .Appearance = ControlAppearance.Success,
+                                .Content = "Login erfolgreich.",
+                                .Timeout = TimeSpan.FromSeconds(2)
+                            }
                             erfolgLogin.Show()
 
                             Await Task.Delay(2000)
@@ -80,32 +84,32 @@ Public Class Login
                         End If
                     Else
                         Dim loginFehler As New Snackbar(SnackbarPresenter) With {
-                        .Title = "Oh nein!",
-                        .Appearance = ControlAppearance.Danger,
-                        .Content = "Login fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.",
-                        .Timeout = TimeSpan.FromSeconds(2)
-                    }
+                            .Title = "Oh nein!",
+                            .Appearance = ControlAppearance.Danger,
+                            .Content = "Login fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         loginFehler.Show()
                     End If
                     reader.Close()
                 End Using
             Else
                 Dim felderAusfuellen As New Snackbar(SnackbarPresenter) With {
-                .Title = "Oh nein!",
-                .Appearance = ControlAppearance.Danger,
-                .Content = "Bitte geben Sie sowohl eine E-Mail-Adresse als auch ein Passwort ein.",
-                .Timeout = TimeSpan.FromSeconds(2)
-            }
+                    .Title = "Oh nein!",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = "Bitte geben Sie sowohl eine E-Mail-Adresse als auch ein Passwort ein.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
                 felderAusfuellen.Show()
             End If
         Catch ex As Exception
             ' Fehlerbehandlung (optional)
             Dim fehlerSnackbar As New Snackbar(SnackbarPresenter) With {
-            .Title = "Fehler!",
-            .Appearance = ControlAppearance.Danger,
-            .Content = "Ein unerwarteter Fehler ist aufgetreten.",
-            .Timeout = TimeSpan.FromSeconds(2)
-        }
+                .Title = "Fehler!",
+                .Appearance = ControlAppearance.Danger,
+                .Content = "Ein unerwarteter Fehler ist aufgetreten.",
+                .Timeout = TimeSpan.FromSeconds(2)
+            }
             fehlerSnackbar.Show()
         Finally
             ' Ladeindikator ausblenden und deaktivieren
@@ -114,8 +118,6 @@ Public Class Login
             B_Login.IsEnabled = True ' Button wieder aktivieren
         End Try
     End Sub
-
-
 
     ' Wechsel zur Registrierungsansicht
     Private Sub B_RegisterView_Click(sender As Object, e As RoutedEventArgs) Handles B_RegisterView.Click
@@ -140,7 +142,7 @@ Public Class Login
             ' Gib dem UI Zeit zur Aktualisierung
             Await Task.Delay(100) ' Kurze Verzögerung, damit das UI die Sichtbarkeitsänderung rendern kann
 
-            ' Deine bestehende Logik
+            ' Datenbankverbindung vorbereiten
             Dim dbDateipfad As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
             Dim verbindungsString As String = $"Data Source={dbDateipfad};Version=3;"
 
@@ -153,10 +155,11 @@ Public Class Login
             If Not String.IsNullOrWhiteSpace(vorname) AndAlso Not String.IsNullOrWhiteSpace(nachname) AndAlso Not String.IsNullOrWhiteSpace(email) AndAlso Not String.IsNullOrWhiteSpace(passwort) Then
                 If Not IstGueltigeEmail(email) Then
                     Dim ungultigeEmailSnackbar As New Snackbar(SnackbarPresenter) With {
-                    .Title = "Ungültige E-Mail!",
-                    .Appearance = ControlAppearance.Danger,
-                    .Content = "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
-                    .Timeout = TimeSpan.FromSeconds(2)}
+                        .Title = "Ungültige E-Mail!",
+                        .Appearance = ControlAppearance.Danger,
+                        .Content = "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+                        .Timeout = TimeSpan.FromSeconds(2)
+                    }
                     ungultigeEmailSnackbar.Show()
                     Return
                 End If
@@ -169,10 +172,11 @@ Public Class Login
                     Dim emailExists As Integer = Convert.ToInt32(Await checkEmailSql.ExecuteScalarAsync())
                     If emailExists > 0 Then
                         Dim registrierungFehler As New Snackbar(SnackbarPresenter) With {
-                        .Title = "Oh nein!",
-                        .Appearance = ControlAppearance.Danger,
-                        .Content = "Diese E-Mail-Adresse ist bereits registriert.",
-                        .Timeout = TimeSpan.FromSeconds(2)}
+                            .Title = "Oh nein!",
+                            .Appearance = ControlAppearance.Danger,
+                            .Content = "Diese E-Mail-Adresse ist bereits registriert.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         registrierungFehler.Show()
                         Return
                     End If
@@ -208,17 +212,19 @@ Public Class Login
 
                     If emailGesendet Then
                         Dim registrierungErfolg As New Snackbar(SnackbarPresenter) With {
-                        .Title = "Juhu!",
-                        .Appearance = ControlAppearance.Success,
-                        .Content = "Registrierung erfolgreich. Eine Bestätigungs-E-Mail wurde gesendet.",
-                        .Timeout = TimeSpan.FromSeconds(4)}
+                            .Title = "Juhu!",
+                            .Appearance = ControlAppearance.Success,
+                            .Content = "Registrierung erfolgreich. Eine Bestätigungs-E-Mail wurde gesendet.",
+                            .Timeout = TimeSpan.FromSeconds(4)
+                        }
                         registrierungErfolg.Show()
                     Else
                         Dim registrierungErfolg As New Snackbar(SnackbarPresenter) With {
-                        .Title = "Juhu!",
-                        .Appearance = ControlAppearance.Success,
-                        .Content = "Registrierung erfolgreich. Da der E-Mail-Versand fehlgeschlagen ist, verwenden Sie den Code '23082001' zur Bestätigung.",
-                        .Timeout = TimeSpan.FromSeconds(4)}
+                            .Title = "Juhu!",
+                            .Appearance = ControlAppearance.Success,
+                            .Content = "Registrierung erfolgreich. Da der E-Mail-Versand fehlgeschlagen ist, verwenden Sie den Code '23082001' zur Bestätigung.",
+                            .Timeout = TimeSpan.FromSeconds(4)
+                        }
                         registrierungErfolg.Show()
                     End If
 
@@ -229,19 +235,21 @@ Public Class Login
                 End Using
             Else
                 Dim felderAusfuellen As New Snackbar(SnackbarPresenter) With {
-                .Title = "Oh nein!",
-                .Appearance = ControlAppearance.Danger,
-                .Content = "Bitte füllen Sie alle erforderlichen Felder aus.",
-                .Timeout = TimeSpan.FromSeconds(2)}
+                    .Title = "Oh nein!",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = "Bitte füllen Sie alle erforderlichen Felder aus.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
                 felderAusfuellen.Show()
             End If
         Catch ex As Exception
             ' Fehlerbehandlung (optional)
             Dim fehlerSnackbar As New Snackbar(SnackbarPresenter) With {
-            .Title = "Fehler!",
-            .Appearance = ControlAppearance.Danger,
-            .Content = "Ein unerwarteter Fehler ist aufgetreten.",
-            .Timeout = TimeSpan.FromSeconds(2)}
+                .Title = "Fehler!",
+                .Appearance = ControlAppearance.Danger,
+                .Content = "Ein unerwarteter Fehler ist aufgetreten.",
+                .Timeout = TimeSpan.FromSeconds(2)
+            }
             fehlerSnackbar.Show()
         Finally
             ' Ladeindikator ausblenden und deaktivieren
@@ -252,13 +260,10 @@ Public Class Login
         End Try
     End Sub
 
-
-
     ' Bestätigungscode generieren
     Private Function GeneriereBestaetigungscode() As String
-
         Dim randomNumber(3) As Byte
-            RandomNumberGenerator.Fill(randomNumber)
+        RandomNumberGenerator.Fill(randomNumber)
         Return BitConverter.ToUInt32(randomNumber, 0).ToString("X8")
     End Function
 
@@ -384,7 +389,6 @@ Public Class Login
     End Function
 
     ' Bestätigungscode bestätigen
-    ' Bestätigungscode bestätigen
     Private Async Sub B_BestaetigenCode_Click(sender As Object, e As RoutedEventArgs)
         Try
             ' Ladeindikator anzeigen und aktivieren
@@ -399,10 +403,11 @@ Public Class Login
 
             If String.IsNullOrWhiteSpace(eingegebenerCode) Then
                 Dim leerCodeSnackbar As New Snackbar(SnackbarPresenter) With {
-                .Title = "Fehler!",
-                .Appearance = ControlAppearance.Danger,
-                .Content = "Bitte geben Sie den Zahlencode ein.",
-                .Timeout = TimeSpan.FromSeconds(2)}
+                    .Title = "Fehler!",
+                    .Appearance = ControlAppearance.Danger,
+                    .Content = "Bitte geben Sie den Zahlencode ein.",
+                    .Timeout = TimeSpan.FromSeconds(2)
+                }
                 leerCodeSnackbar.Show()
                 Return
             End If
@@ -425,10 +430,11 @@ Public Class Login
                         Await updateSql.ExecuteNonQueryAsync()
 
                         Dim erfolgSnackbar As New Snackbar(SnackbarPresenter) With {
-                        .Title = "Erfolg!",
-                        .Appearance = ControlAppearance.Success,
-                        .Content = "Ihr Konto wurde erfolgreich verifiziert.",
-                        .Timeout = TimeSpan.FromSeconds(2)}
+                            .Title = "Erfolg!",
+                            .Appearance = ControlAppearance.Success,
+                            .Content = "Ihr Konto wurde erfolgreich verifiziert.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         erfolgSnackbar.Show()
 
                         ' Weiterleitung zur Hauptansicht
@@ -439,28 +445,31 @@ Public Class Login
                     Else
                         ' Falscher Code
                         Dim falscherCodeSnackbar As New Snackbar(SnackbarPresenter) With {
-                        .Title = "Fehler!",
-                        .Appearance = ControlAppearance.Danger,
-                        .Content = "Der eingegebene Code ist ungültig.",
-                        .Timeout = TimeSpan.FromSeconds(2)}
+                            .Title = "Fehler!",
+                            .Appearance = ControlAppearance.Danger,
+                            .Content = "Der eingegebene Code ist ungültig.",
+                            .Timeout = TimeSpan.FromSeconds(2)
+                        }
                         falscherCodeSnackbar.Show()
                     End If
                 Else
                     Dim keinCodeSnackbar As New Snackbar(SnackbarPresenter) With {
-                    .Title = "Fehler!",
-                    .Appearance = ControlAppearance.Danger,
-                    .Content = "Kein Bestätigungscode gefunden.",
-                    .Timeout = TimeSpan.FromSeconds(2)}
+                        .Title = "Fehler!",
+                        .Appearance = ControlAppearance.Danger,
+                        .Content = "Kein Bestätigungscode gefunden.",
+                        .Timeout = TimeSpan.FromSeconds(2)
+                    }
                     keinCodeSnackbar.Show()
                 End If
             End Using
         Catch ex As Exception
             ' Fehlerbehandlung (optional)
             Dim fehlerSnackbar As New Snackbar(SnackbarPresenter) With {
-            .Title = "Fehler!",
-            .Appearance = ControlAppearance.Danger,
-            .Content = "Ein unerwarteter Fehler ist aufgetreten.",
-            .Timeout = TimeSpan.FromSeconds(2)}
+                .Title = "Fehler!",
+                .Appearance = ControlAppearance.Danger,
+                .Content = "Ein unerwarteter Fehler ist aufgetreten.",
+                .Timeout = TimeSpan.FromSeconds(2)
+            }
             fehlerSnackbar.Show()
         Finally
             ' Ladeindikator ausblenden und deaktivieren
@@ -470,13 +479,13 @@ Public Class Login
         End Try
     End Sub
 
-
     ' Abbrechen der Code-Eingabe und Rückkehr zum Login-Grid
     Private Sub B_AbbrechenCode_Click(sender As Object, e As RoutedEventArgs)
         Me.CodeEntry_Grid.Visibility = Visibility.Hidden
         Me.Login_Grid.Visibility = Visibility.Visible
     End Sub
 
+    ' Passwort vergessen-Klick-Event
     Private Sub B_passwort_vergessen_Click(sender As Object, e As RoutedEventArgs)
         Dim passwortvergessen As New Snackbar(SnackbarPresenter) With {
             .Title = "Passwort vergessen?",
@@ -487,12 +496,78 @@ Public Class Login
         passwortvergessen.Show()
     End Sub
 
+    ' Passwortfeld KeyDown-Event
     Private Sub TB_Passwort_KeyDown(sender As Object, e As KeyEventArgs)
         ' Überprüfen, ob die Enter-Taste gedrückt wurde
         If e.Key = Key.Enter Then
             ' Optional: Führen Sie die Login-Logik aus, wenn Enter gedrückt wird
             B_Login_Click(B_Login, New RoutedEventArgs())
         End If
+    End Sub
+
+    ' Methode zum Speichern der Anmeldeinformationen
+    Public Sub SaveCredentials(email As String, passwort As String)
+        Using cred As New Credential
+            cred.Password = passwort
+            cred.Username = email
+            cred.Target = "KnowledgeBaseApp"
+            cred.Type = CredentialType.Generic
+            cred.PersistanceType = PersistanceType.LocalComputer
+            cred.Save()
+        End Using
+    End Sub
+
+    ' Methode zum automatischen Ausfüllen der Anmeldeinformationen
+    Private Async Sub TryAutoFillLogin()
+        ' Abrufen des Windows-Benutzernamens
+        Dim windowsUsername As String = Environment.GetEnvironmentVariable("USERNAME")
+
+        If String.IsNullOrWhiteSpace(windowsUsername) Then Return
+
+        ' Datenbankpfad und Verbindungszeichenfolge
+        Dim dbDateipfad As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KnowledgeBase.db")
+        Dim verbindungsString As String = $"Data Source={dbDateipfad};Version=3;"
+
+        Try
+            Using verbindung As New SQLiteConnection(verbindungsString)
+                Await verbindung.OpenAsync()
+
+                ' SQL-Abfrage zur Überprüfung der Existenz des Benutzers
+                Dim sql As New SQLiteCommand("SELECT Email, Username FROM T_Knowledge_Base_Userverwaltung WHERE Username = @Username", verbindung)
+                sql.Parameters.AddWithValue("@Username", windowsUsername)
+
+                Dim reader As SQLiteDataReader = Await sql.ExecuteReaderAsync()
+
+                If Await reader.ReadAsync() Then
+                    ' Benutzer existiert, E-Mail-Feld vorausfüllen
+                    Dim email As String = reader("Email").ToString()
+                    Me.TB_Email.Text = email
+
+                    ' Abrufen der gespeicherten Anmeldeinformationen
+                    Dim cred As New Credential With {
+                        .Target = "KnowledgeBaseApp",
+                        .Type = CredentialType.Generic
+                    }
+
+                    If cred.Load() Then
+                        Me.TB_Passwort.Password = cred.Password
+                        ' Optional: Automatisches Anmelden
+                        ' B_Login_Click(B_Login, New RoutedEventArgs())
+                    End If
+                End If
+
+                reader.Close()
+            End Using
+        Catch ex As Exception
+            ' Fehlerbehandlung, falls erforderlich
+            Dim fehlerSnackbar As New Snackbar(SnackbarPresenter) With {
+                .Title = "Fehler!",
+                .Appearance = ControlAppearance.Danger,
+                .Content = "Ein Fehler beim automatischen Ausfüllen ist aufgetreten.",
+                .Timeout = TimeSpan.FromSeconds(2)
+            }
+            fehlerSnackbar.Show()
+        End Try
     End Sub
 
 End Class
